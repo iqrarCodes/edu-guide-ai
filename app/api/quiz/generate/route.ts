@@ -44,10 +44,10 @@ export async function POST(request: NextRequest) {
 
       // Dynamic imports (only when needed)
       if (ext === 'pdf') {
-        const pdfParse = (await import('pdf-parse')).default
-        const pdfData = await pdfParse(buffer)
-        extractedText = pdfData.text
-      } else if (ext === 'docx') {
+  const pdfParse = (await import('pdf-parse' as any)).default
+  const pdfData = await pdfParse(buffer)
+  extractedText = pdfData.text
+} else if (ext === 'docx') {
         const mammoth = await import('mammoth')
         const result = await mammoth.extractRawText({ buffer })
         extractedText = result.value

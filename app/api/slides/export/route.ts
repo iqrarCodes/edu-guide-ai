@@ -64,8 +64,10 @@ export async function POST(request: NextRequest) {
       fileExtension = 'docx'
     }
 
-    // Return file as response
-    return new NextResponse(fileBuffer, {
+    // ✅ Fix: Convert Buffer to Uint8Array for NextResponse
+    const uint8Array = new Uint8Array(fileBuffer)
+
+    return new NextResponse(uint8Array, {
       headers: {
         'Content-Type': contentType,
         'Content-Disposition': `attachment; filename="${projectName || 'presentation'}.${fileExtension}"`,
@@ -77,13 +79,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// ----- PPTX Generator -----
+// ----- PPTX Generator (unchanged) -----
 async function generatePPTX(slides: any[], title: string, colors: any): Promise<Buffer> {
   const pptx = new PptxGenJS()
   pptx.defineLayout({ name: 'WIDE', width: 13.33, height: 7.5 })
   pptx.layout = 'WIDE'
 
-  // Title Slide
   const titleSlide = pptx.addSlide()
   titleSlide.background = { color: colors.bg }
   titleSlide.addText(title, {
@@ -108,12 +109,10 @@ async function generatePPTX(slides: any[], title: string, colors: any): Promise<
     align: 'center',
   })
 
-  // Content Slides
   slides.forEach((slideData: any, idx: number) => {
     const slide = pptx.addSlide()
     slide.background = { color: colors.bg }
 
-    // Left accent bar
     slide.addShape(pptx.ShapeType.rect, {
       x: 0,
       y: 0,
@@ -123,7 +122,6 @@ async function generatePPTX(slides: any[], title: string, colors: any): Promise<
       line: { color: colors.accent },
     })
 
-    // Title
     slide.addText(slideData.title || `Slide ${idx + 1}`, {
       x: 0.7,
       y: 0.5,
@@ -135,7 +133,6 @@ async function generatePPTX(slides: any[], title: string, colors: any): Promise<
       bold: true,
     })
 
-    // Bullets
     const bullets = slideData.bullets || ['No bullet points provided.']
     let yPos = 1.8
     bullets.forEach((bullet: string, i: number) => {
@@ -154,7 +151,6 @@ async function generatePPTX(slides: any[], title: string, colors: any): Promise<
       yPos += 0.75
     })
 
-    // Key Takeaway
     if (slideData.key_takeaway) {
       slide.addShape(pptx.ShapeType.rect, {
         x: 1.2,
@@ -177,7 +173,6 @@ async function generatePPTX(slides: any[], title: string, colors: any): Promise<
       })
     }
 
-    // Slide number
     slide.addText(`${idx + 1} / ${slides.length}`, {
       x: 11.5,
       y: 7,
@@ -194,7 +189,7 @@ async function generatePPTX(slides: any[], title: string, colors: any): Promise<
   return Buffer.from(buffer)
 }
 
-// ----- PDF Generator (Fixed TypeScript Errors) -----
+// ----- PDF Generator (Fixed) -----
 async function generatePDF(slides: any[], title: string, colors: any): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: any[] = []
@@ -230,7 +225,6 @@ async function generatePDF(slides: any[], title: string, colors: any): Promise<B
       bullets.forEach((bullet: string) => {
         doc.fontSize(13)
           .fillColor(colors.text)
-          // ✅ Fixed: Use 'left' alignment with indent – italic not a direct option
           .text(`• ${bullet}`, {
             indent: 20,
             width: 450,
@@ -242,7 +236,7 @@ async function generatePDF(slides: any[], title: string, colors: any): Promise<B
 
       if (slideData.key_takeaway) {
         doc.moveDown(0.5)
-        // ✅ Set font to oblique for italic effect
+        // ✅ Fix: Use oblique font instead of italic option
         doc.font('Helvetica-Oblique')
           .fontSize(12)
           .fillColor('#92400E')
@@ -263,7 +257,7 @@ async function generatePDF(slides: any[], title: string, colors: any): Promise<B
   })
 }
 
-// ----- DOCX Generator -----
+// ----- DOCX Generator (unchanged) -----
 async function generateDOCX(slides: any[], title: string, colors: any): Promise<Buffer> {
   const doc = new Document({
     sections: [{
