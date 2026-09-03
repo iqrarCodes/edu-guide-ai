@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       fileExtension = 'docx'
     }
 
-    // ✅ Fix: Convert Buffer to Uint8Array for NextResponse
+    // ✅ Convert Buffer to Uint8Array for NextResponse
     const uint8Array = new Uint8Array(fileBuffer)
 
     return new NextResponse(uint8Array, {
@@ -189,7 +189,7 @@ async function generatePPTX(slides: any[], title: string, colors: any): Promise<
   return Buffer.from(buffer)
 }
 
-// ----- PDF Generator (Fixed) -----
+// ----- PDF Generator (Fully Fixed with TypeScript) -----
 async function generatePDF(slides: any[], title: string, colors: any): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: any[] = []
@@ -225,6 +225,7 @@ async function generatePDF(slides: any[], title: string, colors: any): Promise<B
       bullets.forEach((bullet: string) => {
         doc.fontSize(13)
           .fillColor(colors.text)
+          // ✅ Fixed: use overload with only options, no x,y
           .text(`• ${bullet}`, {
             indent: 20,
             width: 450,
@@ -236,20 +237,21 @@ async function generatePDF(slides: any[], title: string, colors: any): Promise<B
 
       if (slideData.key_takeaway) {
         doc.moveDown(0.5)
-        // ✅ Fix: Use oblique font instead of italic option
+        // ✅ Fixed: change font to oblique and reset
         doc.font('Helvetica-Oblique')
           .fontSize(12)
           .fillColor('#92400E')
+          // ✅ Use text with only options
           .text(`💡 ${slideData.key_takeaway}`, {
             indent: 20,
             align: 'left',
           })
-        // Reset font
-        doc.font('Helvetica')
+        doc.font('Helvetica') // Reset font
       }
 
       doc.fontSize(10)
         .fillColor('#9CA3AF')
+        // ✅ Fixed: use x,y,options overload
         .text(`${idx + 1} / ${slides.length}`, 450, doc.page.height - 40, { align: 'right' })
     })
 

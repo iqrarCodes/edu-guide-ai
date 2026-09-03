@@ -65,13 +65,13 @@ export default function QuizList() {
             }
 
             const formData = new FormData()
-            Object.entries(payload).forEach(([key, value]) => {
-                if (key === 'file') {
-                    formData.append('file', value)
-                } else {
-                    formData.append(key, String(value))
-                }
-            })
+Object.entries(payload).forEach(([key, value]) => {
+  if (key === 'file') {
+    formData.append('file', value as File)  // ✅ Fixed
+  } else {
+    formData.append(key, String(value))
+  }
+})
 
             const res = await fetch('/api/quiz/generate', {
                 method: 'POST',
