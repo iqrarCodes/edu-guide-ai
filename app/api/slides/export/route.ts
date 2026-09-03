@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       fileExtension = 'docx'
     }
 
-    // ✅ Convert Buffer to Uint8Array for NextResponse
+    // Convert Buffer to Uint8Array for NextResponse
     const uint8Array = new Uint8Array(fileBuffer)
 
     return new NextResponse(uint8Array, {
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// ----- PPTX Generator (unchanged) -----
+// ----- PPTX Generator -----
 async function generatePPTX(slides: any[], title: string, colors: any): Promise<Buffer> {
   const pptx = new PptxGenJS()
   pptx.defineLayout({ name: 'WIDE', width: 13.33, height: 7.5 })
@@ -189,7 +189,7 @@ async function generatePPTX(slides: any[], title: string, colors: any): Promise<
   return Buffer.from(buffer)
 }
 
-// ----- PDF Generator (Fully Fixed with TypeScript) -----
+// ----- PDF Generator (Fully Fixed) -----
 async function generatePDF(slides: any[], title: string, colors: any): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: any[] = []
@@ -207,7 +207,7 @@ async function generatePDF(slides: any[], title: string, colors: any): Promise<B
     doc.addPage()
     doc.fontSize(28)
       .fillColor(colors.title)
-      .text(title, { align: 'center' })
+      .text(String(title), { align: 'center' })
     doc.moveDown(0.5)
     doc.fontSize(16)
       .fillColor('#6B7280')
@@ -218,15 +218,14 @@ async function generatePDF(slides: any[], title: string, colors: any): Promise<B
       doc.addPage()
       doc.fontSize(24)
         .fillColor(colors.title)
-        .text(slideData.title || `Slide ${idx + 1}`, { underline: true })
+        .text(String(slideData.title || `Slide ${idx + 1}`), { underline: true })
       doc.moveDown(0.5)
 
       const bullets = slideData.bullets || ['No bullet points provided.']
       bullets.forEach((bullet: string) => {
         doc.fontSize(13)
           .fillColor(colors.text)
-          // ✅ Fixed: use overload with only options, no x,y
-          .text(`• ${bullet}`, {
+          .text(`• ${String(bullet)}`, {
             indent: 20,
             width: 450,
             align: 'left',
@@ -237,12 +236,10 @@ async function generatePDF(slides: any[], title: string, colors: any): Promise<B
 
       if (slideData.key_takeaway) {
         doc.moveDown(0.5)
-        // ✅ Fixed: change font to oblique and reset
         doc.font('Helvetica-Oblique')
           .fontSize(12)
           .fillColor('#92400E')
-          // ✅ Use text with only options
-          .text(`💡 ${slideData.key_takeaway}`, {
+          .text(`💡 ${String(slideData.key_takeaway)}`, {
             indent: 20,
             align: 'left',
           })
@@ -251,7 +248,6 @@ async function generatePDF(slides: any[], title: string, colors: any): Promise<B
 
       doc.fontSize(10)
         .fillColor('#9CA3AF')
-        // ✅ Fixed: use x,y,options overload
         .text(`${idx + 1} / ${slides.length}`, 450, doc.page.height - 40, { align: 'right' })
     })
 
@@ -259,7 +255,7 @@ async function generatePDF(slides: any[], title: string, colors: any): Promise<B
   })
 }
 
-// ----- DOCX Generator (unchanged) -----
+// ----- DOCX Generator -----
 async function generateDOCX(slides: any[], title: string, colors: any): Promise<Buffer> {
   const doc = new Document({
     sections: [{
