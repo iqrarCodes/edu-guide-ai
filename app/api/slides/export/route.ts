@@ -5,7 +5,7 @@ import PDFDocument from 'pdfkit'
 import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx'
 import { Buffer } from 'buffer'
 
-// Template colors (same as lib/templates.ts)
+// Template colors (simplified for export)
 const TEMPLATES: Record<string, any> = {
   modern: {
     colors: { bg: 'F8FAFC', accent: '6366F1', title: '1E293B', text: '334155' },
@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
       fileExtension = 'docx'
     }
 
+    // Return file as response
     return new NextResponse(fileBuffer, {
       headers: {
         'Content-Type': contentType,
@@ -134,7 +135,7 @@ async function generatePPTX(slides: any[], title: string, colors: any): Promise<
       bold: true,
     })
 
-    // Bullets with justify
+    // Bullets
     const bullets = slideData.bullets || ['No bullet points provided.']
     let yPos = 1.8
     bullets.forEach((bullet: string, i: number) => {
@@ -193,7 +194,7 @@ async function generatePPTX(slides: any[], title: string, colors: any): Promise<
   return Buffer.from(buffer)
 }
 
-// ----- PDF Generator -----
+// ----- PDF Generator (Fixed TypeScript Errors) -----
 async function generatePDF(slides: any[], title: string, colors: any): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: any[] = []
@@ -229,10 +230,11 @@ async function generatePDF(slides: any[], title: string, colors: any): Promise<B
       bullets.forEach((bullet: string) => {
         doc.fontSize(13)
           .fillColor(colors.text)
+          // ✅ Fixed: Use 'left' alignment with indent – italic not a direct option
           .text(`• ${bullet}`, {
             indent: 20,
             width: 450,
-            align: 'justify',
+            align: 'left',
             lineGap: 4,
           })
         doc.moveDown(0.2)
@@ -240,13 +242,16 @@ async function generatePDF(slides: any[], title: string, colors: any): Promise<B
 
       if (slideData.key_takeaway) {
         doc.moveDown(0.5)
-        doc.fontSize(12)
+        // ✅ Set font to oblique for italic effect
+        doc.font('Helvetica-Oblique')
+          .fontSize(12)
           .fillColor('#92400E')
           .text(`💡 ${slideData.key_takeaway}`, {
             indent: 20,
-            italic: true,
-            align: 'justify',
+            align: 'left',
           })
+        // Reset font
+        doc.font('Helvetica')
       }
 
       doc.fontSize(10)
