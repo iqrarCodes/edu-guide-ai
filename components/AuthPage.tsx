@@ -16,11 +16,9 @@ export default function AuthPage({ mode }: AuthPageProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // Login form state
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
 
-  // Register form state
   const [regName, setRegName] = useState('')
   const [regEmail, setRegEmail] = useState('')
   const [regPassword, setRegPassword] = useState('')
@@ -35,7 +33,6 @@ export default function AuthPage({ mode }: AuthPageProps) {
     setError('')
   }
 
-  // Handle Login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!loginEmail || !loginPassword) {
@@ -52,7 +49,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
         password: loginPassword,
       })
       if (error) throw error
-      toast.success('Welcome back! ')
+      toast.success('Welcome back! 🎉')
       router.push('/dashboard')
     } catch (err: any) {
       setError(err.message || 'Invalid credentials')
@@ -62,7 +59,6 @@ export default function AuthPage({ mode }: AuthPageProps) {
     }
   }
 
-  // Handle Register
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!regName || !regEmail || !regPassword || !regConfirmPassword) {
@@ -100,7 +96,6 @@ export default function AuthPage({ mode }: AuthPageProps) {
     }
   }
 
-  // Google OAuth
   const handleGoogleAuth = async () => {
     try {
       await supabase.auth.signInWithOAuth({
@@ -122,7 +117,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
           !isLogin ? 'active' : ''
         }`}
       >
-        {/* ===== LOGIN FORM ===== */}
+        {/* ===== LOGIN FORM (Left) ===== */}
         <div className="absolute top-0 left-0 w-1/2 h-full flex flex-col justify-center px-10 z-20 transition-all duration-700">
           <div className={`transform transition-all duration-700 delay-100 ${
             isLogin ? 'translate-x-0 opacity-100 blur-0' : '-translate-x-[120%] opacity-0 blur-[10px]'
@@ -190,7 +185,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
           </div>
         </div>
 
-        {/* ===== REGISTER FORM ===== */}
+        {/* ===== REGISTER FORM (Right) ===== */}
         <div className="absolute top-0 right-0 w-1/2 h-full flex flex-col justify-center px-10 z-20 pointer-events-none transition-all duration-700">
           <div className={`transform transition-all duration-700 delay-100 ${
             isLogin ? 'translate-x-[120%] opacity-0 blur-[10px]' : 'translate-x-0 opacity-100 blur-0 pointer-events-auto'
@@ -278,31 +273,31 @@ export default function AuthPage({ mode }: AuthPageProps) {
           </div>
         </div>
 
-        {/* ===== INFO TEXT (Login) – FIXED: pointer-events-none when hidden ===== */}
-        <div className={`absolute top-0 right-0 w-1/2 h-full flex flex-col justify-center px-10 z-20 transition-all duration-700 ${isLogin ? '' : 'pointer-events-none'}`}>
-          <div className={`text-right transition-all duration-700 delay-100 ${
-            isLogin ? 'translate-x-0 opacity-100 blur-0' : 'translate-x-[120%] opacity-0 blur-[10px]'
-          }`}>
-            <h2 className="text-3xl font-bold text-white">WELCOME BACK!</h2>
-            <p className="text-sm text-gray-400 mt-2">
-              We are happy to have you with us again. If you need any assistance, feel free to reach out.
-            </p>
+        {/* ===== INFO TEXT (Login) – Only When isLogin True ===== */}
+        {isLogin && (
+          <div className="absolute top-0 right-0 w-1/2 h-full flex flex-col justify-center px-10 z-20">
+            <div className="text-right">
+              <h2 className="text-3xl font-bold text-white">WELCOME BACK!</h2>
+              <p className="text-sm text-gray-400 mt-2">
+                We are happy to have you with us again. If you need any assistance, feel free to reach out.
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* ===== INFO TEXT (Register) ===== */}
-        <div className="absolute top-0 left-0 w-1/2 h-full flex flex-col justify-center px-10 z-20 pointer-events-none transition-all duration-700">
-          <div className={`transition-all duration-700 delay-100 ${
-            isLogin ? '-translate-x-[120%] opacity-0 blur-[10px]' : 'translate-x-0 opacity-100 blur-0 pointer-events-auto'
-          }`}>
-            <h2 className="text-3xl font-bold text-white">WELCOME!</h2>
-            <p className="text-sm text-gray-400 mt-2">
-              We're delighted to have you here. If you need any assistance, feel free to reach out.
-            </p>
+        {/* ===== INFO TEXT (Register) – Only When isLogin False ===== */}
+        {!isLogin && (
+          <div className="absolute top-0 left-0 w-1/2 h-full flex flex-col justify-center px-10 z-20">
+            <div className="text-left">
+              <h2 className="text-3xl font-bold text-white">WELCOME!</h2>
+              <p className="text-sm text-gray-400 mt-2">
+                We're delighted to have you here. If you need any assistance, feel free to reach out.
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* ===== BACKGROUND ANIMATED PANEL ===== */}
+        {/* ===== BACKGROUND ANIMATED PANEL (Sliding Effect) ===== */}
         <div
           className={`absolute -top-1 right-0 w-[850px] h-[600px] bg-gradient-to-br from-[#0F0F1A] to-[#7C3AED] border-b-2 border-[#7C3AED] transform transition-all duration-[1.5s] ease-in-out z-10 ${
             isLogin ? 'rotate-[10deg] skew-y-[40deg]' : 'rotate-0 skew-y-0'
