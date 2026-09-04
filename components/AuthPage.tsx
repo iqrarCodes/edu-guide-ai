@@ -52,7 +52,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
         password: loginPassword,
       })
       if (error) throw error
-      toast.success('Welcome back! 🎉')
+      toast.success('Welcome back! ')
       router.push('/dashboard')
     } catch (err: any) {
       setError(err.message || 'Invalid credentials')
@@ -278,8 +278,8 @@ export default function AuthPage({ mode }: AuthPageProps) {
           </div>
         </div>
 
-        {/* ===== INFO TEXT (Login) ===== */}
-        <div className="absolute top-0 right-0 w-1/2 h-full flex flex-col justify-center px-10 z-20">
+        {/* ===== INFO TEXT (Login) – FIXED: pointer-events-none when hidden ===== */}
+        <div className={`absolute top-0 right-0 w-1/2 h-full flex flex-col justify-center px-10 z-20 transition-all duration-700 ${isLogin ? '' : 'pointer-events-none'}`}>
           <div className={`text-right transition-all duration-700 delay-100 ${
             isLogin ? 'translate-x-0 opacity-100 blur-0' : 'translate-x-[120%] opacity-0 blur-[10px]'
           }`}>
@@ -291,7 +291,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
         </div>
 
         {/* ===== INFO TEXT (Register) ===== */}
-        <div className="absolute top-0 left-0 w-1/2 h-full flex flex-col justify-center px-10 z-20 pointer-events-none">
+        <div className="absolute top-0 left-0 w-1/2 h-full flex flex-col justify-center px-10 z-20 pointer-events-none transition-all duration-700">
           <div className={`transition-all duration-700 delay-100 ${
             isLogin ? '-translate-x-[120%] opacity-0 blur-[10px]' : 'translate-x-0 opacity-100 blur-0 pointer-events-auto'
           }`}>
