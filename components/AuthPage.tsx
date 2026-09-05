@@ -357,6 +357,7 @@ function MobileAuth({
   )
 }
 
+
 // ============================================================
 // DESKTOP COMPONENT – Split Screen + Diagonal Panels (Purple)
 // ============================================================
@@ -532,8 +533,12 @@ function DesktopAuth({
           </div>
         </div>
 
-        {/* === Info Text – Login (right side) === */}
-        <div className="absolute top-0 right-0 w-1/2 h-full flex flex-col justify-center px-10 z-20">
+        {/* === Info Text – Login (right side) – FIXED pointer-events === */}
+        <div
+          className={`absolute top-0 right-0 w-1/2 h-full flex flex-col justify-center px-10 z-20 transition-all duration-700 ${
+            isLogin ? '' : 'pointer-events-none'
+          }`}
+        >
           <div
             className={`text-right transition-all duration-700 delay-100 ${
               isLogin
@@ -548,13 +553,17 @@ function DesktopAuth({
           </div>
         </div>
 
-        {/* === Info Text – Register (left side) === */}
-        <div className="absolute top-0 left-0 w-1/2 h-full flex flex-col justify-center px-10 z-20 pointer-events-none">
+        {/* === Info Text – Register (left side) – FIXED pointer-events === */}
+        <div
+          className={`absolute top-0 left-0 w-1/2 h-full flex flex-col justify-center px-10 z-20 transition-all duration-700 ${
+            isLogin ? 'pointer-events-none' : ''
+          }`}
+        >
           <div
             className={`transition-all duration-700 delay-100 ${
               isLogin
                 ? '-translate-x-[120%] opacity-0 blur-[10px]'
-                : 'translate-x-0 opacity-100 blur-0 pointer-events-auto'
+                : 'translate-x-0 opacity-100 blur-0'
             }`}
           >
             <h2 className="text-3xl font-bold text-white">WELCOME!</h2>
@@ -564,7 +573,7 @@ function DesktopAuth({
           </div>
         </div>
 
-        {/* === Diagonal Background Panels (Original Animation) === */}
+        {/* === Diagonal Background Panels === */}
         <div
           className={`absolute -top-1 right-0 w-[850px] h-[600px] bg-gradient-to-br from-[#09090b] to-[#7C3AED] border-b-2 border-[#7C3AED] transform transition-all duration-[1.5s] ease-in-out z-10 ${
             isLogin ? 'rotate-[10deg] skew-y-[40deg]' : 'rotate-0 skew-y-0'
