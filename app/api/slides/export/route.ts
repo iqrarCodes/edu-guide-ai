@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Slides and format are required' }, { status: 400 })
   }
 
-  // ✅ Only allow PPTX and DOCX (PDF removed)
+  // ✅ Only allow PPTX and DOCX (PDF removed to avoid build issues)
   if (!['pptx', 'docx'].includes(format)) {
     return NextResponse.json({ error: 'Invalid format. Only PPTX and DOCX are supported.' }, { status: 400 })
   }
@@ -72,12 +72,13 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// ----- PPTX Generator (unchanged) -----
+// ----- PPTX Generator -----
 async function generatePPTX(slides: any[], title: string, colors: any): Promise<Buffer> {
   const pptx = new PptxGenJS()
   pptx.defineLayout({ name: 'WIDE', width: 13.33, height: 7.5 })
   pptx.layout = 'WIDE'
 
+  // Title Slide
   const titleSlide = pptx.addSlide()
   titleSlide.background = { color: colors.bg }
   titleSlide.addText(title, {
@@ -89,20 +90,24 @@ async function generatePPTX(slides: any[], title: string, colors: any): Promise<
     fontSize: 20, fontFace: 'Arial', color: '6B7280', align: 'center',
   })
 
+  // Content Slides
   slides.forEach((slideData: any, idx: number) => {
     const slide = pptx.addSlide()
     slide.background = { color: colors.bg }
 
+    // Left accent bar
     slide.addShape(pptx.ShapeType.rect, {
       x: 0, y: 0, w: 0.3, h: 7.5,
       fill: { color: colors.accent }, line: { color: colors.accent },
     })
 
+    // Title
     slide.addText(slideData.title || `Slide ${idx + 1}`, {
       x: 0.7, y: 0.5, w: 11, h: 0.8,
       fontSize: 28, fontFace: 'Arial', color: colors.title, bold: true,
     })
 
+    // Bullets
     const bullets = slideData.bullets || ['No bullet points provided.']
     let yPos = 1.8
     bullets.forEach((bullet: string, i: number) => {
@@ -115,6 +120,7 @@ async function generatePPTX(slides: any[], title: string, colors: any): Promise<
       yPos += 0.75
     })
 
+    // Key Takeaway
     if (slideData.key_takeaway) {
       slide.addShape(pptx.ShapeType.rect, {
         x: 1.2, y: 6.2, w: 10, h: 0.8,
@@ -126,17 +132,19 @@ async function generatePPTX(slides: any[], title: string, colors: any): Promise<
       })
     }
 
+    // Slide number
     slide.addText(`${idx + 1} / ${slides.length}`, {
       x: 11.5, y: 7, w: 1.5, h: 0.4,
       fontSize: 12, fontFace: 'Arial', color: '9CA3AF', align: 'right',
     })
   })
 
+  // ✅ FIX: return buffer as Buffer (type assertion)
   const buffer = await pptx.write({ outputType: 'nodebuffer' })
-  return Buffer.from(buffer)
+  return buffer as Buffer
 }
 
-// ----- DOCX Generator (unchanged) -----
+// ----- DOCX Generator -----
 async function generateDOCX(slides: any[], title: string, colors: any): Promise<Buffer> {
   const doc = new Document({
     sections: [{
