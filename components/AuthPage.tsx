@@ -409,7 +409,7 @@ function DesktopAuth({
                   placeholder="Email"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  className="w-full h-12 bg-white/5 border border-gray-700 rounded-lg px-4 pr-12 text-white focus:border-[#7C3AED] outline-none transition"
+                  className="w-full h-12 bg-white/5 border border-gray-700 rounded-lg pl-10 pr-12 text-white focus:border-[#7C3AED] outline-none transition"
                 />
               </div>
               <div className="relative">
@@ -419,7 +419,7 @@ function DesktopAuth({
                   placeholder="Password"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full h-12 bg-white/5 border border-gray-700 rounded-lg px-4 pr-12 text-white focus:border-[#7C3AED] outline-none transition"
+                  className="w-full h-12 bg-white/5 border border-gray-700 rounded-lg pl-10 pr-12 text-white focus:border-[#7C3AED] outline-none transition"
                 />
                 <button
                   type="button"
@@ -470,7 +470,7 @@ function DesktopAuth({
                   placeholder="Full Name"
                   value={regName}
                   onChange={(e) => setRegName(e.target.value)}
-                  className="w-full h-12 bg-white/5 border border-gray-700 rounded-lg px-4 pr-12 text-white focus:border-[#7C3AED] outline-none transition"
+                  className="w-full h-12 bg-white/5 border border-gray-700 rounded-lg pl-10 pr-12 text-white focus:border-[#7C3AED] outline-none transition"
                 />
               </div>
               <div className="relative">
@@ -480,7 +480,7 @@ function DesktopAuth({
                   placeholder="Email"
                   value={regEmail}
                   onChange={(e) => setRegEmail(e.target.value)}
-                  className="w-full h-12 bg-white/5 border border-gray-700 rounded-lg px-4 pr-12 text-white focus:border-[#7C3AED] outline-none transition"
+                  className="w-full h-12 bg-white/5 border border-gray-700 rounded-lg pl-10 pr-12 text-white focus:border-[#7C3AED] outline-none transition"
                 />
               </div>
               <div className="relative">
@@ -490,7 +490,7 @@ function DesktopAuth({
                   placeholder="Password"
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}
-                  className="w-full h-12 bg-white/5 border border-gray-700 rounded-lg px-4 pr-12 text-white focus:border-[#7C3AED] outline-none transition"
+                  className="w-full h-12 bg-white/5 border border-gray-700 rounded-lg pl-10 pr-12 text-white focus:border-[#7C3AED] outline-none transition"
                 />
                 <button
                   type="button"
@@ -507,7 +507,7 @@ function DesktopAuth({
                   placeholder="Confirm Password"
                   value={regConfirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full h-12 bg-white/5 border border-gray-700 rounded-lg px-4 pr-12 text-white focus:border-[#7C3AED] outline-none transition"
+                  className="w-full h-12 bg-white/5 border border-gray-700 rounded-lg pl-10 pr-12 text-white focus:border-[#7C3AED] outline-none transition"
                 />
               </div>
               {error && <div className="text-red-500 text-sm">{error}</div>}
