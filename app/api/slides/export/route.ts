@@ -141,7 +141,7 @@ async function generatePPTX(slides: any[], title: string, colors: any): Promise<
 
   // ✅ FIX: return buffer as Buffer (type assertion)
   const buffer = await pptx.write({ outputType: 'nodebuffer' })
-  return buffer as Buffer
+  return Buffer.from(buffer as any)
 }
 
 // ----- DOCX Generator -----
