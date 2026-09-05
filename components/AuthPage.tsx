@@ -152,7 +152,6 @@ export default function AuthPage({ mode }: AuthPageProps) {
           onGoogle={handleGoogleAuth}
         />
       ) : (
-        /* ===== DESKTOP LAYOUT ===== */
         <DesktopAuth
           isLogin={isLogin}
           setIsLogin={toggleForm}
@@ -181,7 +180,9 @@ export default function AuthPage({ mode }: AuthPageProps) {
   )
 }
 
-// ===== MOBILE COMPONENT =====
+// ============================================================
+// MOBILE COMPONENT – Clean (No Extra Text, Only Inputs)
+// ============================================================
 function MobileAuth({
   isLogin,
   setIsLogin,
@@ -207,30 +208,22 @@ function MobileAuth({
 }: any) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0F0F1A] px-4 py-8 relative overflow-hidden">
-      {/* Background Gradient */}
+      {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#0F0F1A] via-[#1A1A2E] to-[#2D1B4E] opacity-50" />
       <div className="absolute top-[-200px] right-[-200px] w-[500px] h-[500px] bg-[#7C3AED]/10 rounded-full blur-3xl" />
       <div className="absolute bottom-[-200px] left-[-200px] w-[500px] h-[500px] bg-[#6366F1]/10 rounded-full blur-3xl" />
 
       <div className="relative w-full max-w-md">
-        {/* Brand */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 text-white/80 text-sm font-medium bg-white/10 px-4 py-1.5 rounded-full mb-3">
+        {/* Only Brand Icon – No Text */}
+        <div className="flex justify-center mb-8">
+          <div className="inline-flex items-center gap-2 text-white/80 text-sm font-medium bg-white/10 px-4 py-1.5 rounded-full">
             <Sparkles className="w-4 h-4" />
             EduGuide AI+
           </div>
-          <h1 className="text-3xl font-bold text-white">
-            {isLogin ? 'Welcome Back' : 'Join EduGuide'}
-          </h1>
-          <p className="text-white/50 text-sm mt-1">
-            {isLogin 
-              ? 'Sign in to continue your learning' 
-              : 'Start your AI-powered education journey'}
-          </p>
         </div>
 
         {/* Tabs */}
-        <div className="flex bg-white/5 rounded-2xl p-1 mb-8">
+        <div className="flex bg-white/5 rounded-2xl p-1 mb-6">
           <button
             onClick={() => setIsLogin(true)}
             className={`flex-1 py-3 text-sm font-semibold rounded-xl transition ${
@@ -267,7 +260,7 @@ function MobileAuth({
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
                 type="email"
-                placeholder="Email address"
+                placeholder="Email"
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
                 className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:border-[#7C3AED] outline-none transition"
@@ -301,13 +294,12 @@ function MobileAuth({
             </button>
           </form>
         ) : (
-          /* Register Form */
           <form onSubmit={onRegister} className="space-y-3">
             <div className="relative">
               <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
                 type="text"
-                placeholder="Full name"
+                placeholder="Full Name"
                 value={regName}
                 onChange={(e) => setRegName(e.target.value)}
                 className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:border-[#7C3AED] outline-none transition"
@@ -318,7 +310,7 @@ function MobileAuth({
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
                 type="email"
-                placeholder="Email address"
+                placeholder="Email"
                 value={regEmail}
                 onChange={(e) => setRegEmail(e.target.value)}
                 className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:border-[#7C3AED] outline-none transition"
@@ -329,7 +321,7 @@ function MobileAuth({
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Password (min 6 chars)"
+                placeholder="Password"
                 value={regPassword}
                 onChange={(e) => setRegPassword(e.target.value)}
                 className="w-full pl-12 pr-12 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:border-[#7C3AED] outline-none transition"
@@ -348,7 +340,7 @@ function MobileAuth({
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Confirm password"
+                placeholder="Confirm Password"
                 value={regConfirmPassword}
                 onChange={(e) => setRegConfirmPassword(e.target.value)}
                 className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:border-[#7C3AED] outline-none transition"
@@ -386,7 +378,7 @@ function MobileAuth({
           Continue with Google
         </button>
 
-        {/* Footer */}
+        {/* Footer – Only Toggle Link */}
         <div className="text-center mt-6 text-white/30 text-sm">
           {isLogin ? (
             <p>
@@ -415,7 +407,9 @@ function MobileAuth({
   )
 }
 
-// ===== DESKTOP COMPONENT (Original Split Screen) =====
+// ============================================================
+// DESKTOP COMPONENT (Unchanged – Original Split Screen)
+// ============================================================
 function DesktopAuth({
   isLogin,
   setIsLogin,
