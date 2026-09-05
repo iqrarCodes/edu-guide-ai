@@ -126,16 +126,14 @@ export default function AuthPage({ mode }: AuthPageProps) {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0F0F1A] px-4 py-8 relative overflow-hidden">
-      {/* Decorative Background */}
+      {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#0F0F1A] via-[#1A1A2E] to-[#2D1B4E] opacity-50" />
       <div className="absolute top-[-200px] right-[-200px] w-[500px] h-[500px] bg-[#7C3AED]/10 rounded-full blur-3xl" />
       <div className="absolute bottom-[-200px] left-[-200px] w-[500px] h-[500px] bg-[#6366F1]/10 rounded-full blur-3xl" />
 
-      {/* Mobile Container */}
-      <div className="relative w-full max-w-md md:max-w-[750px] bg-[#1A1A2E] border border-[#7C3AED]/30 rounded-2xl shadow-[0_0_25px_rgba(124,58,237,0.15)] overflow-hidden z-10">
-        
+      <div className="relative w-full max-w-md bg-[#1A1A2E] border border-[#7C3AED]/30 rounded-2xl shadow-[0_0_25px_rgba(124,58,237,0.15)] overflow-hidden z-10">
         {/* ===== MOBILE LAYOUT ===== */}
-        <div className="md:hidden p-6">
+        <div className="p-6">
           {/* Logo */}
           <div className="text-center mb-6">
             <div className="inline-flex items-center gap-2 text-white/80 text-sm font-medium bg-white/10 px-4 py-1.5 rounded-full mb-3">
@@ -170,7 +168,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
             </button>
           </div>
 
-          {/* Mobile Form */}
+          {/* Form */}
           {isLogin ? (
             <LoginForm
               email={loginEmail}
@@ -204,179 +202,12 @@ export default function AuthPage({ mode }: AuthPageProps) {
             />
           )}
         </div>
-
-        {/* ===== DESKTOP LAYOUT (Split Screen with Animation) ===== */}
-        <div className="hidden md:block relative min-h-[500px]">
-          {/* Login Form (Left) */}
-          <div className={`absolute top-0 left-0 w-1/2 h-full flex flex-col justify-center px-10 z-20 transition-all duration-700 ${
-            isLogin ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-[120%] pointer-events-none'
-          }`}>
-            <h1 className="text-3xl font-bold text-white text-center">Login</h1>
-            <form onSubmit={handleLogin} className="mt-6 space-y-4">
-              <div className="relative">
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  className="w-full h-12 bg-transparent border border-gray-700 rounded-lg px-4 pr-12 text-white focus:border-[#7C3AED] outline-none transition"
-                />
-                <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-              </div>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Password"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full h-12 bg-transparent border border-gray-700 rounded-lg px-4 pr-12 text-white focus:border-[#7C3AED] outline-none transition"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5 text-gray-500" /> : <Eye className="w-5 h-5 text-gray-500" />}
-                </button>
-              </div>
-              {error && <div className="text-red-500 text-sm">{error}</div>}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full h-12 bg-gradient-to-r from-[#7C3AED] to-[#6366F1] rounded-lg text-white font-semibold hover:shadow-[0_0_15px_rgba(124,58,237,0.4)] transition disabled:opacity-50"
-              >
-                {loading ? 'Loading...' : 'Login'}
-              </button>
-              <div className="text-center text-sm text-gray-400">
-                Don't have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => toggleForm(false)}
-                  className="text-[#7C3AED] font-semibold hover:underline"
-                >
-                  Sign Up
-                </button>
-              </div>
-              <GoogleButton onClick={handleGoogleAuth} />
-            </form>
-          </div>
-
-          {/* Register Form (Right) */}
-          <div className={`absolute top-0 right-0 w-1/2 h-full flex flex-col justify-center px-10 z-20 transition-all duration-700 ${
-            !isLogin ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-[120%] pointer-events-none'
-          }`}>
-            <h1 className="text-3xl font-bold text-white text-center">Register</h1>
-            <form onSubmit={handleRegister} className="mt-6 space-y-3">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Full Name"
-                  value={regName}
-                  onChange={(e) => setRegName(e.target.value)}
-                  className="w-full h-12 bg-transparent border border-gray-700 rounded-lg px-4 pr-12 text-white focus:border-[#7C3AED] outline-none transition"
-                />
-                <User className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-              </div>
-              <div className="relative">
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={regEmail}
-                  onChange={(e) => setRegEmail(e.target.value)}
-                  className="w-full h-12 bg-transparent border border-gray-700 rounded-lg px-4 pr-12 text-white focus:border-[#7C3AED] outline-none transition"
-                />
-                <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-              </div>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Password"
-                  value={regPassword}
-                  onChange={(e) => setRegPassword(e.target.value)}
-                  className="w-full h-12 bg-transparent border border-gray-700 rounded-lg px-4 pr-12 text-white focus:border-[#7C3AED] outline-none transition"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5 text-gray-500" /> : <Eye className="w-5 h-5 text-gray-500" />}
-                </button>
-              </div>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Confirm Password"
-                  value={regConfirmPassword}
-                  onChange={(e) => setRegConfirmPassword(e.target.value)}
-                  className="w-full h-12 bg-transparent border border-gray-700 rounded-lg px-4 pr-12 text-white focus:border-[#7C3AED] outline-none transition"
-                />
-                <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-              </div>
-              {error && <div className="text-red-500 text-sm">{error}</div>}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full h-12 bg-gradient-to-r from-[#7C3AED] to-[#6366F1] rounded-lg text-white font-semibold hover:shadow-[0_0_15px_rgba(124,58,237,0.4)] transition disabled:opacity-50"
-              >
-                {loading ? 'Loading...' : 'Register'}
-              </button>
-              <div className="text-center text-sm text-gray-400">
-                Already have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => toggleForm(true)}
-                  className="text-[#7C3AED] font-semibold hover:underline"
-                >
-                  Sign In
-                </button>
-              </div>
-              <GoogleButton onClick={handleGoogleAuth} />
-            </form>
-          </div>
-
-          {/* Info Texts */}
-          {isLogin ? (
-            <div className="absolute top-0 right-0 w-1/2 h-full flex flex-col justify-center px-10 z-20">
-              <div className="text-right">
-                <h2 className="text-3xl font-bold text-white">WELCOME BACK!</h2>
-                <p className="text-sm text-gray-400 mt-2">
-                  We are happy to have you with us again. If you need any assistance, feel free to reach out.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="absolute top-0 left-0 w-1/2 h-full flex flex-col justify-center px-10 z-20">
-              <div className="text-left">
-                <h2 className="text-3xl font-bold text-white">WELCOME!</h2>
-                <p className="text-sm text-gray-400 mt-2">
-                  We're delighted to have you here. If you need any assistance, feel free to reach out.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Background Animated Panel */}
-          <div
-            className={`absolute -top-1 right-0 w-[850px] h-[600px] bg-gradient-to-br from-[#0F0F1A] to-[#7C3AED] border-b-2 border-[#7C3AED] transform transition-all duration-[1.5s] ease-in-out z-10 ${
-              isLogin ? 'rotate-[10deg] skew-y-[40deg]' : 'rotate-0 skew-y-0'
-            }`}
-            style={{ transformOrigin: 'bottom right' }}
-          />
-          <div
-            className={`absolute top-full left-[250px] w-[850px] h-[700px] bg-[#1A1A2E] border-t-2 border-[#7C3AED] transform transition-all duration-[1.5s] ease-in-out z-10 ${
-              isLogin ? 'rotate-0 skew-y-0' : 'rotate-[-11deg] skew-y-[-41deg]'
-            }`}
-            style={{ transformOrigin: 'bottom left' }}
-          />
-        </div>
       </div>
     </div>
   )
 }
 
-// ===== Sub-components (reused) =====
-
+// ===== Login Form Component =====
 function LoginForm({ email, setEmail, password, setPassword, showPassword, setShowPassword, error, loading, onSubmit, onGoogle }: any) {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
@@ -422,6 +253,7 @@ function LoginForm({ email, setEmail, password, setPassword, showPassword, setSh
   )
 }
 
+// ===== Register Form Component =====
 function RegisterForm({ name, setName, email, setEmail, password, setPassword, confirmPassword, setConfirmPassword, showPassword, setShowPassword, error, loading, onSubmit, onGoogle, onToggle }: any) {
   return (
     <form onSubmit={onSubmit} className="space-y-3">
@@ -496,6 +328,7 @@ function RegisterForm({ name, setName, email, setEmail, password, setPassword, c
   )
 }
 
+// ===== Google Button =====
 function GoogleButton({ onClick }: { onClick: () => void }) {
   return (
     <button
