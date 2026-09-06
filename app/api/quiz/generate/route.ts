@@ -17,6 +17,9 @@ export async function POST(request: NextRequest) {
   const numMcqs = parseInt(formData.get('numMcqs') as string) || 5
   const numShortQuestions = parseInt(formData.get('numShortQuestions') as string) || 3
 
+  // ✅ Log what we received (for debugging)
+  console.log(`📝 Quiz generation request: sourceType=${sourceType}, language=${language}, difficulty=${difficulty}`)
+
   try {
     let extractedText = ''
     let sourceUrl = ''
@@ -30,6 +33,7 @@ export async function POST(request: NextRequest) {
       sourceUrl = videoUrl
       const transcript = await getTranscript(videoUrl)
       extractedText = transcript.text
+      console.log(`✅ Transcript extracted (length: ${extractedText.length})`)
     } else {
       const file = formData.get('file') as File
       if (!file) {
@@ -42,12 +46,12 @@ export async function POST(request: NextRequest) {
       const buffer = Buffer.from(bytes)
       const ext = file.name.split('.').pop()?.toLowerCase() || ''
 
-      // Dynamic imports (only when needed)
+      // ----- File extraction (dynamic imports) -----
       if (ext === 'pdf') {
-  const pdfParse = (await import('pdf-parse' as any)).default
-  const pdfData = await pdfParse(buffer)
-  extractedText = pdfData.text
-} else if (ext === 'docx') {
+        const pdfParse = (await import('pdf-parse' as any)).default
+        const pdfData = await pdfParse(buffer)
+        extractedText = pdfData.text
+      } else if (ext === 'docx') {
         const mammoth = await import('mammoth')
         const result = await mammoth.extractRawText({ buffer })
         extractedText = result.value
@@ -71,18 +75,27 @@ export async function POST(request: NextRequest) {
         }
         extractedText = text
       } else {
+        // fallback: try to read as text
         extractedText = buffer.toString('utf-8')
       }
 
       if (!extractedText || extractedText.length < 100) {
         return NextResponse.json({ error: 'Could not extract sufficient text from file' }, { status: 400 })
       }
+      console.log(`✅ File extracted (length: ${extractedText.length})`)
     }
 
-    // Generate quiz using AI – this function now uses quizGroq internally
-    const quizData = await generateQuiz(extractedText, difficulty, language, numMcqs, numShortQuestions)
+    // ----- Generate quiz using AI -----
+    // ✅ language is passed here
+    const quizData = await generateQuiz(
+      extractedText,
+      difficulty,
+      language,
+      numMcqs,
+      numShortQuestions
+    )
 
-    // Save to quizzes table
+    // ----- Save to Supabase 'quizzes' table -----
     const { data: quiz, error } = await supabase
       .from('quizzes')
       .insert([{
@@ -99,21 +112,35 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('❌ Supabase insert error:', error)
+      throw new Error('Failed to save quiz to database')
+    }
 
-    // Also add to projects table for dashboard stats
+    // ----- Also add to 'projects' table for dashboard stats -----
+    const projectName = `Quiz: ${sourceType === 'video' ? 'Video' : 'File'} (${language})`
     await supabase
       .from('projects')
       .insert([{
         user_id: user.id,
         type: 'quiz',
-        name: `Quiz: ${sourceType === 'video' ? 'Video' : 'File'}`,
+        name: projectName,
         description: `${difficulty} - ${language} - ${new Date().toLocaleDateString()}`,
       }])
 
-    return NextResponse.json({ success: true, quizId: quiz.id, ...quizData })
+    console.log(`✅ Quiz saved successfully: ${quiz.id}`)
+
+    return NextResponse.json({
+      success: true,
+      quizId: quiz.id,
+      ...quizData
+    })
+
   } catch (error: any) {
-    console.error('Quiz generation error:', error)
-    return NextResponse.json({ error: error.message || 'Generation failed' }, { status: 500 })
+    console.error('🔥 Quiz generation error:', error)
+    return NextResponse.json(
+      { error: error.message || 'Generation failed' },
+      { status: 500 }
+    )
   }
 }

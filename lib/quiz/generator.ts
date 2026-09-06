@@ -1,4 +1,5 @@
-import { quizGroq } from '@/lib/groq-clients'   // ✅ Quiz client
+import { quizGroq } from '@/lib/groq-clients'
+import JSON5 from 'json5'
 
 function safeParseJSON(content: string) {
     let cleaned = content.replace(/```json\s*/g, '').replace(/```\s*/g, '')
@@ -11,7 +12,7 @@ function safeParseJSON(content: string) {
         .replace(/,\s*\]/g, ']')
         .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":')
     try { return JSON.parse(fixed) } catch (e) {
-        try { return JSON.parse(fixed) } catch (e2) {
+        try { return JSON5.parse(fixed) } catch (e2) {
             const match = fixed.match(/\{[\s\S]*\}/)
             if (match) {
                 try { return JSON.parse(match[0]) } catch (e3) { throw new Error('Could not parse JSON.') }
@@ -21,14 +22,13 @@ function safeParseJSON(content: string) {
     }
 }
 
-function generateFallbackQuiz(text: string, numMcqs: number, numShortQuestions: number) {
+function generateFallbackQuiz(text: string, numMcqs: number, numShortQuestions: number, language: string = 'English') {
     const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 20)
     const fallback: any = {
-        summary: ['Content summary generated from the provided text.'],
+        summary: [`Content summary generated from the provided text. (${language})`],
         mcqs: [],
         shortQuestions: []
     }
-
     for (let i = 0; i < Math.min(numMcqs, sentences.length); i++) {
         const s = sentences[i].trim()
         fallback.mcqs.push({
@@ -38,7 +38,6 @@ function generateFallbackQuiz(text: string, numMcqs: number, numShortQuestions: 
             explanation: 'This is the main point of the sentence.'
         })
     }
-
     for (let i = 0; i < Math.min(numShortQuestions, sentences.length); i++) {
         const s = sentences[(i + numMcqs) % sentences.length].trim()
         const words = s.split(' ').filter(w => w.length > 3).slice(0, 3)
@@ -47,7 +46,6 @@ function generateFallbackQuiz(text: string, numMcqs: number, numShortQuestions: 
             expected_keywords: words.length > 0 ? words : ['concept', 'explanation']
         })
     }
-
     while (fallback.mcqs.length < numMcqs) {
         fallback.mcqs.push({
             question: 'What is the key concept discussed?',
@@ -62,7 +60,6 @@ function generateFallbackQuiz(text: string, numMcqs: number, numShortQuestions: 
             expected_keywords: ['main idea', 'concept']
         })
     }
-
     return fallback
 }
 
@@ -75,14 +72,20 @@ export async function generateQuiz(
 ) {
     const text = transcriptText.slice(0, 5000)
 
+    // ✅ IMPROVED PROMPT – Conceptual Questions
     const prompt = `
 You are an expert quiz creator. Based on the text below, generate:
-- A summary (5-10 bullet points) in English
-- Exactly ${numMcqs} multiple-choice questions (4 options each) in English
-- Exactly ${numShortQuestions} short-answer questions in English
+- A summary (5-8 bullet points) in **${language}**
+- Exactly ${numMcqs} multiple-choice questions (4 options each) in **${language}**
+- Exactly ${numShortQuestions} short-answer questions in **${language}**
 
-**Important:** All questions, options, and explanations must be in English only.
-**Questions must test understanding, not recall.**
+**Question Requirements (CRITICAL):**
+- Questions must test **conceptual understanding**, NOT simple recall.
+- Ask "why", "how", "what if", "compare/contrast", "explain the relationship between" type questions.
+- Avoid questions where the answer is directly copied from the transcript.
+- For MCQs: all 4 options should be plausible, only one correct based on deeper understanding.
+- For short questions: require explanation, not just a single word/phrase.
+
 **Difficulty:** ${difficulty}
 
 Text:
@@ -107,9 +110,11 @@ Output ONLY valid JSON with this exact structure:
   ]
 }`
 
+    // ✅ ONLY YOUR ACTIVE MODELS
     const modelsToTry = [
-        { model: 'qwen/qwen3.6-27b', useJsonMode: true },
-        { model: 'openai/gpt-oss-20b', useJsonMode: true },
+        { model: 'openai/gpt-oss-120b', useJsonMode: true },   // Best for conceptual
+        { model: 'openai/gpt-oss-20b', useJsonMode: true },    // Good fallback
+        { model: 'qwen/qwen3.6-27b', useJsonMode: true },      // Multilingual
     ]
 
     for (const { model, useJsonMode } of modelsToTry) {
@@ -119,12 +124,12 @@ Output ONLY valid JSON with this exact structure:
                 messages: [
                     {
                         role: 'system',
-                        content: 'You are a JSON generator. Your response must be ONLY a valid JSON object. No markdown, no explanations, no extra text. All output must be in English.'
+                        content: `You are a JSON generator. Your response must be ONLY a valid JSON object. All output must be in ${language}.`
                     },
                     { role: 'user', content: prompt }
                 ],
                 temperature: 0.3,
-                max_tokens: 4000,
+                max_tokens: 1500,   // ✅ Safe for free tier (1000 OTPM limit)
                 ...(useJsonMode && { response_format: { type: 'json_object' } })
             })
 
@@ -133,6 +138,7 @@ Output ONLY valid JSON with this exact structure:
 
             const quizData = safeParseJSON(raw)
 
+            // Validate and fill missing fields
             quizData.summary = Array.isArray(quizData.summary) ? quizData.summary : ['Summary not available.']
             quizData.mcqs = Array.isArray(quizData.mcqs) ? quizData.mcqs : []
             quizData.shortQuestions = Array.isArray(quizData.shortQuestions) ? quizData.shortQuestions : []
@@ -149,6 +155,7 @@ Output ONLY valid JSON with this exact structure:
                 expected_keywords: (q.expected_keywords && q.expected_keywords.length > 0) ? q.expected_keywords : ['keyword1', 'keyword2']
             }))
 
+            // Pad to desired counts
             while (quizData.mcqs.length < numMcqs) {
                 quizData.mcqs.push({
                     question: `Sample MCQ ${quizData.mcqs.length + 1}`,
@@ -169,10 +176,11 @@ Output ONLY valid JSON with this exact structure:
 
             if (quizData.mcqs.length === 0) throw new Error('No MCQs generated.')
 
+            // Check if we got placeholder questions (sign of AI failure)
             const hasPlaceholder = quizData.mcqs.some((q: any) => q.question.startsWith('Sample MCQ'))
             if (hasPlaceholder) {
                 console.warn('AI returned placeholders, using fallback.')
-                return generateFallbackQuiz(text, numMcqs, numShortQuestions)
+                return generateFallbackQuiz(text, numMcqs, numShortQuestions, language)
             }
 
             return quizData
@@ -183,5 +191,5 @@ Output ONLY valid JSON with this exact structure:
     }
 
     console.warn('All AI models failed. Using fallback quiz generator.')
-    return generateFallbackQuiz(text, numMcqs, numShortQuestions)
+    return generateFallbackQuiz(text, numMcqs, numShortQuestions, language)
 }
