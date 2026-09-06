@@ -1,16 +1,33 @@
 import { YoutubeTranscript } from 'youtube-transcript'
 
-export async function getTranscript(videoUrl: string, language: string = 'en') {
+export async function getTranscript(videoUrl: string, preferredLanguage: string = 'en') {
     const videoId = extractVideoId(videoUrl)
     if (!videoId) throw new Error('Invalid YouTube URL')
 
+    const languages = [preferredLanguage, 'en', 'en-US', 'en-GB', 'auto']
+    let lastError: Error | null = null
+
+    for (const lang of languages) {
+        try {
+            const transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang })
+            const text = transcript.map(seg => seg.text).join(' ')
+            return { text, languageUsed: lang }
+        } catch (err: any) {
+            lastError = err
+            console.warn(`Failed with language '${lang}':`, err.message)
+        }
+    }
+
+    // Final fallback: without language param
     try {
         const transcript = await YoutubeTranscript.fetchTranscript(videoId)
         const text = transcript.map(seg => seg.text).join(' ')
-        return { text, languageUsed: language }
+        return { text, languageUsed: 'default' }
     } catch (err: any) {
-        throw new Error(`Transcript extraction failed: ${err.message}`)
+        lastError = err
     }
+
+    throw new Error('This video does not have captions available. Please try another video or upload a file.')
 }
 
 function extractVideoId(url: string): string | null {
