@@ -1,33 +1,43 @@
-import { YoutubeTranscript } from 'youtube-transcript'
+import { getSubtitles } from 'youtube-captions-scraper'
 
 export async function getTranscript(videoUrl: string, preferredLanguage: string = 'en') {
     const videoId = extractVideoId(videoUrl)
     if (!videoId) throw new Error('Invalid YouTube URL')
 
+    // Try multiple languages in order
     const languages = [preferredLanguage, 'en', 'en-US', 'en-GB', 'auto']
     let lastError: Error | null = null
 
     for (const lang of languages) {
         try {
-            const transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang })
-            const text = transcript.map(seg => seg.text).join(' ')
+            console.log(`🔄 Trying to fetch transcript with language: ${lang}`)
+            const subtitles = await getSubtitles({
+                videoID: videoId,
+                lang: lang,
+            })
+            if (!subtitles || subtitles.length === 0) {
+                console.warn(`⚠️ No subtitles found for language: ${lang}`)
+                continue
+            }
+            const text = subtitles.map((s: any) => s.text).join(' ')
+            console.log(`✅ Transcript fetched successfully in language: ${lang}`)
             return { text, languageUsed: lang }
         } catch (err: any) {
             lastError = err
-            console.warn(`Failed with language '${lang}':`, err.message)
+            console.warn(`❌ Failed with language '${lang}':`, err.message)
         }
     }
 
-    // Final fallback: without language param
+    // Final fallback: without language (library default)
     try {
-        const transcript = await YoutubeTranscript.fetchTranscript(videoId)
-        const text = transcript.map(seg => seg.text).join(' ')
+        console.log('🔄 Trying without language specification...')
+        const subtitles = await getSubtitles({ videoID: videoId })
+        const text = subtitles.map((s: any) => s.text).join(' ')
         return { text, languageUsed: 'default' }
     } catch (err: any) {
-        lastError = err
+        console.error('🔥 Final fallback failed:', err)
+        throw new Error('This video does not have captions. Please try another video or upload a file.')
     }
-
-    throw new Error('This video does not have captions available. Please try another video or upload a file.')
 }
 
 function extractVideoId(url: string): string | null {
