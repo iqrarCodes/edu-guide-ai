@@ -29,6 +29,7 @@ function generateFallbackQuiz(text: string, numMcqs: number, numShortQuestions: 
         mcqs: [],
         shortQuestions: []
     }
+
     for (let i = 0; i < Math.min(numMcqs, sentences.length); i++) {
         const s = sentences[i].trim()
         fallback.mcqs.push({
@@ -38,6 +39,7 @@ function generateFallbackQuiz(text: string, numMcqs: number, numShortQuestions: 
             explanation: 'This is the main point of the sentence.'
         })
     }
+
     for (let i = 0; i < Math.min(numShortQuestions, sentences.length); i++) {
         const s = sentences[(i + numMcqs) % sentences.length].trim()
         const words = s.split(' ').filter(w => w.length > 3).slice(0, 3)
@@ -46,6 +48,7 @@ function generateFallbackQuiz(text: string, numMcqs: number, numShortQuestions: 
             expected_keywords: words.length > 0 ? words : ['concept', 'explanation']
         })
     }
+
     while (fallback.mcqs.length < numMcqs) {
         fallback.mcqs.push({
             question: 'What is the key concept discussed?',
@@ -60,6 +63,7 @@ function generateFallbackQuiz(text: string, numMcqs: number, numShortQuestions: 
             expected_keywords: ['main idea', 'concept']
         })
     }
+
     return fallback
 }
 
@@ -72,7 +76,7 @@ export async function generateQuiz(
 ) {
     const text = transcriptText.slice(0, 5000)
 
-    // ✅ IMPROVED PROMPT – Conceptual Questions
+    // ✅ Improved prompt with conceptual questions
     const prompt = `
 You are an expert quiz creator. Based on the text below, generate:
 - A summary (5-8 bullet points) in **${language}**
@@ -110,15 +114,18 @@ Output ONLY valid JSON with this exact structure:
   ]
 }`
 
-    // ✅ ONLY YOUR ACTIVE MODELS
+    // ✅ ACTIVE MODELS (as of Sep 2026)
     const modelsToTry = [
-        { model: 'openai/gpt-oss-120b', useJsonMode: true },   // Best for conceptual
-        { model: 'openai/gpt-oss-20b', useJsonMode: true },    // Good fallback
-        { model: 'qwen/qwen3.6-27b', useJsonMode: true },      // Multilingual
+        { model: 'openai/gpt-oss-120b', useJsonMode: true },
+        { model: 'openai/gpt-oss-20b', useJsonMode: true },
+        { model: 'qwen/qwen3.6-27b', useJsonMode: true },
     ]
+
+    let lastError: any = null
 
     for (const { model, useJsonMode } of modelsToTry) {
         try {
+            console.log(`🔍 Trying model: ${model}...`)
             const response = await quizGroq.chat.completions.create({
                 model: model,
                 messages: [
@@ -129,16 +136,16 @@ Output ONLY valid JSON with this exact structure:
                     { role: 'user', content: prompt }
                 ],
                 temperature: 0.3,
-                max_tokens: 1500,   // ✅ Safe for free tier (1000 OTPM limit)
+                max_tokens: 1500,
                 ...(useJsonMode && { response_format: { type: 'json_object' } })
             })
 
             const raw = response.choices[0].message.content || ''
-            console.log('RAW AI RESPONSE (first 300 chars):', raw.substring(0, 300))
+            console.log('✅ RAW AI RESPONSE (first 300 chars):', raw.substring(0, 300))
 
             const quizData = safeParseJSON(raw)
 
-            // Validate and fill missing fields
+            // Validate and fill
             quizData.summary = Array.isArray(quizData.summary) ? quizData.summary : ['Summary not available.']
             quizData.mcqs = Array.isArray(quizData.mcqs) ? quizData.mcqs : []
             quizData.shortQuestions = Array.isArray(quizData.shortQuestions) ? quizData.shortQuestions : []
@@ -176,20 +183,21 @@ Output ONLY valid JSON with this exact structure:
 
             if (quizData.mcqs.length === 0) throw new Error('No MCQs generated.')
 
-            // Check if we got placeholder questions (sign of AI failure)
+            // Check for placeholders
             const hasPlaceholder = quizData.mcqs.some((q: any) => q.question.startsWith('Sample MCQ'))
             if (hasPlaceholder) {
-                console.warn('AI returned placeholders, using fallback.')
+                console.warn('⚠️ AI returned placeholders, using fallback.')
                 return generateFallbackQuiz(text, numMcqs, numShortQuestions, language)
             }
 
             return quizData
 
         } catch (err: any) {
-            console.warn(`Model ${model} failed:`, err.message)
+            lastError = err
+            console.warn(`❌ Model ${model} failed:`, err.message)
         }
     }
 
-    console.warn('All AI models failed. Using fallback quiz generator.')
+    console.warn('🚨 All AI models failed. Using fallback quiz generator.')
     return generateFallbackQuiz(text, numMcqs, numShortQuestions, language)
 }
