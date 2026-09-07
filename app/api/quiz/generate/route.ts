@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { generateQuiz } from '@/lib/quiz/generator'
 import Groq from 'groq-sdk'
 
+// ✅ Use the dedicated Groq key for quiz generation
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY_QUIZ })
 
 export async function POST(request: NextRequest) {
@@ -12,8 +13,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // --- Parse form data ---
   const formData = await request.formData()
-  const sourceType = formData.get('sourceType') as string
+  const sourceType = formData.get('sourceType') as string // 'topic' | 'file'
   const difficulty = (formData.get('difficulty') as string) || 'Medium'
   const language = (formData.get('language') as string) || 'English'
   const numMcqs = parseInt(formData.get('numMcqs') as string) || 5
@@ -22,7 +24,7 @@ export async function POST(request: NextRequest) {
   console.log(`📝 Quiz request: source=${sourceType}, lang=${language}, diff=${difficulty}`)
 
   let extractedText = ''
-  let sourceUrl = ''
+  let sourceName = ''
   let sourceTypeDb = sourceType
 
   try {
@@ -35,8 +37,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Topic is required' }, { status: 400 })
       }
 
+      sourceName = topic
       console.log(`📚 Generating content for topic: ${topic}`)
-      sourceUrl = topic
 
       const contentPrompt = `
 You are an expert educator. Generate a comprehensive, well-structured lesson summary (500-800 words) on the topic: "${topic}"${subtopics ? ` with focus on: ${subtopics}` : ''}.
@@ -64,13 +66,15 @@ Include key concepts, definitions, examples, and important distinctions.
       if (!file) {
         return NextResponse.json({ error: 'File required' }, { status: 400 })
       }
-      sourceUrl = file.name
+
+      sourceName = file.name
       sourceTypeDb = 'file'
 
       const bytes = await file.arrayBuffer()
       const buffer = Buffer.from(bytes)
       const ext = file.name.split('.').pop()?.toLowerCase() || ''
 
+      // --- Extract text from file ---
       if (ext === 'pdf') {
         const pdfParse = (await import('pdf-parse' as any)).default
         const pdfData = await pdfParse(buffer)
@@ -91,6 +95,7 @@ Include key concepts, definitions, examples, and important distinctions.
 
       console.log(`📄 File extracted (${extractedText.length} chars)`)
 
+      // --- Chapter Extraction (if user specified) ---
       const chapter = formData.get('chapter') as string
       if (chapter && extractedText.length > 0) {
         console.log(`📖 Extracting chapter: ${chapter}`)
@@ -142,7 +147,7 @@ Output ONLY the extracted content.
       throw new Error('No content extracted. Please try a different source.')
     }
 
-    // --- Generate Quiz ---
+    // --- Generate Quiz using AI ---
     const quizData = await generateQuiz(
       extractedText,
       difficulty,
@@ -151,19 +156,21 @@ Output ONLY the extracted content.
       numShortQuestions
     )
 
-    // --- Save to Supabase ---
+    // ========== 5. SAVE TO SUPABASE ==========
+    const insertData = {
+      user_id: user.id,
+      source_type: sourceTypeDb,          // 'topic' or 'file'
+      source_name: sourceName,            // topic name or file name
+      difficulty,
+      language,
+      summary: quizData.summary,
+      mcqs: quizData.mcqs,
+      short_questions: quizData.shortQuestions,
+    }
+
     const { data: quiz, error } = await supabase
       .from('quizzes')
-      .insert([{
-        user_id: user.id,
-        source_type: sourceTypeDb,
-        source_url: sourceUrl,
-        difficulty,
-        language,
-        summary: quizData.summary,
-        mcqs: quizData.mcqs,
-        short_questions: quizData.shortQuestions,
-      }])
+      .insert([insertData])
       .select()
       .single()
 
@@ -172,7 +179,7 @@ Output ONLY the extracted content.
       throw new Error('Failed to save quiz to database')
     }
 
-    // --- Add to projects ---
+    // --- Also add to projects table for dashboard stats ---
     const projectName = `Quiz: ${sourceType === 'topic' ? 'Topic' : 'File'}`
     await supabase
       .from('projects')
