@@ -1,49 +1,16 @@
 import axios from 'axios'
-import ytdl from '@distube/ytdl-core'
 import { YoutubeTranscript } from 'youtube-transcript'
 
 export async function getTranscript(videoUrl: string) {
     const videoId = extractVideoId(videoUrl)
     if (!videoId) throw new Error('Invalid YouTube URL')
 
-    // ----- Method 1: ytdl-core (best for serverless) -----
+    // ----- Method 1: youtube-transcript (direct – may fail on Vercel) -----
     try {
-        console.log('🔍 Trying ytdl-core method...')
-        const info = await ytdl.getInfo(videoId, {
-            requestOptions: {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-                }
-            }
-        })
-        const captions = info.player_response?.captions?.playerCaptionsTracklistRenderer?.captionTracks
-        if (captions && captions.length > 0) {
-            let track = captions.find((c: any) => c.languageCode?.startsWith('en'))
-            if (!track) track = captions[0]
-            const { data: xml } = await axios.get(track.baseUrl, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-                }
-            })
-            const text = xml
-                .replace(/<[^>]+>/g, ' ')
-                .replace(/\s+/g, ' ')
-                .trim()
-            if (text) {
-                console.log('✅ ytdl-core success')
-                return { text, languageUsed: track.languageCode }
-            }
-        }
-    } catch (err: any) {
-        console.warn('⚠️ ytdl-core failed:', err.message)
-    }
-
-    // ----- Method 2: youtube-transcript (fallback) -----
-    try {
-        console.log('🔍 Trying youtube-transcript method...')
+        console.log('🔍 Trying youtube-transcript...')
         const transcript = await YoutubeTranscript.fetchTranscript(videoId)
         const text = transcript.map((item: any) => item.text).join(' ')
-        if (text.trim().length > 0) {
+        if (text.trim()) {
             console.log('✅ youtube-transcript success')
             return { text, languageUsed: 'en' }
         }
@@ -51,35 +18,46 @@ export async function getTranscript(videoUrl: string) {
         console.warn('⚠️ youtube-transcript failed:', err.message)
     }
 
-    // ----- Method 3: Direct scraping (last resort) -----
+    // ----- Method 2: Proxy fetch (allorigins.win) -----
     try {
-        console.log('🔍 Trying direct scrape method...')
-        const { data: html } = await axios.get(`https://www.youtube.com/watch?v=${videoId}`, {
+        console.log('🔍 Trying proxy fetch...')
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}`
+        const { data: html } = await axios.get(proxyUrl, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             }
         })
+
+        // Extract ytInitialPlayerResponse JSON from HTML
         const match = html.match(/var ytInitialPlayerResponse\s*=\s*({.+?});\s*(?:var|<\/script>)/)
-        if (match) {
-            const playerResponse = JSON.parse(match[1])
-            const captions = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks
-            if (captions && captions.length > 0) {
-                let track = captions.find((c: any) => c.languageCode?.startsWith('en'))
-                if (!track) track = captions[0]
-                const { data: xml } = await axios.get(track.baseUrl, {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-                    }
-                })
-                const text = xml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-                if (text) {
-                    console.log('✅ direct scrape success')
-                    return { text, languageUsed: track.languageCode }
-                }
-            }
+        if (!match) throw new Error('Could not find player response')
+
+        const playerResponse = JSON.parse(match[1])
+        const captions = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks
+        if (!captions || captions.length === 0) {
+            throw new Error('No captions found')
         }
+
+        let track = captions.find((c: any) => c.languageCode?.startsWith('en')) || captions[0]
+
+        // Fetch transcript XML using proxy as well (to avoid IP block)
+        const transcriptProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(track.baseUrl)}`
+        const { data: xml } = await axios.get(transcriptProxyUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+        })
+
+        const text = xml
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+
+        if (!text) throw new Error('Empty transcript')
+        console.log('✅ Proxy fetch success')
+        return { text, languageUsed: track.languageCode }
     } catch (err: any) {
-        console.warn('⚠️ direct scrape failed:', err.message)
+        console.warn('⚠️ Proxy fetch failed:', err.message)
     }
 
     // ----- All methods failed -----
