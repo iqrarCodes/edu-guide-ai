@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { generateQuiz } from '@/lib/quiz/generator'
-import { getTranscript } from '@/lib/quiz/transcript'
+import Groq from 'groq-sdk'
+
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY_QUIZ })
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -17,36 +19,58 @@ export async function POST(request: NextRequest) {
   const numMcqs = parseInt(formData.get('numMcqs') as string) || 5
   const numShortQuestions = parseInt(formData.get('numShortQuestions') as string) || 3
 
-  // ✅ Log what we received (for debugging)
-  console.log(`📝 Quiz generation request: sourceType=${sourceType}, language=${language}, difficulty=${difficulty}`)
+  console.log(`📝 Quiz request: source=${sourceType}, lang=${language}, diff=${difficulty}`)
+
+  let extractedText = ''
+  let sourceUrl = ''
+  let sourceTypeDb = sourceType
 
   try {
-    let extractedText = ''
-    let sourceUrl = ''
-    let sourceTypeDb = 'video'
+    // ========== 1. TOPIC-BASED ==========
+    if (sourceType === 'topic') {
+      const topic = formData.get('topic') as string
+      const subtopics = (formData.get('subtopics') as string) || ''
 
-    if (sourceType === 'video') {
-      const videoUrl = formData.get('videoUrl') as string
-      if (!videoUrl) {
-        return NextResponse.json({ error: 'Video URL required' }, { status: 400 })
+      if (!topic) {
+        return NextResponse.json({ error: 'Topic is required' }, { status: 400 })
       }
-      sourceUrl = videoUrl
-      const transcript = await getTranscript(videoUrl)
-      extractedText = transcript.text
-      console.log(`✅ Transcript extracted (length: ${extractedText.length})`)
-    } else {
+
+      console.log(`📚 Generating content for topic: ${topic}`)
+      sourceUrl = topic
+
+      const contentPrompt = `
+You are an expert educator. Generate a comprehensive, well-structured lesson summary (500-800 words) on the topic: "${topic}"${subtopics ? ` with focus on: ${subtopics}` : ''}.
+The content should be educational, clear, and suitable for generating a quiz.
+Include key concepts, definitions, examples, and important distinctions.
+`
+
+      const contentResponse = await groq.chat.completions.create({
+        model: 'openai/gpt-oss-120b',
+        messages: [{ role: 'user', content: contentPrompt }],
+        temperature: 0.5,
+        max_tokens: 2000,
+      })
+
+      extractedText = contentResponse.choices[0].message.content || ''
+      if (!extractedText || extractedText.length < 200) {
+        throw new Error('Failed to generate content for this topic.')
+      }
+      console.log(`✅ Topic content generated (${extractedText.length} chars)`)
+    }
+
+    // ========== 2. FILE UPLOAD (with Chapter Extraction) ==========
+    else if (sourceType === 'file') {
       const file = formData.get('file') as File
       if (!file) {
         return NextResponse.json({ error: 'File required' }, { status: 400 })
       }
-      sourceTypeDb = 'file'
       sourceUrl = file.name
+      sourceTypeDb = 'file'
 
       const bytes = await file.arrayBuffer()
       const buffer = Buffer.from(bytes)
       const ext = file.name.split('.').pop()?.toLowerCase() || ''
 
-      // ----- File extraction (dynamic imports) -----
       if (ext === 'pdf') {
         const pdfParse = (await import('pdf-parse' as any)).default
         const pdfData = await pdfParse(buffer)
@@ -57,36 +81,68 @@ export async function POST(request: NextRequest) {
         extractedText = result.value
       } else if (ext === 'txt') {
         extractedText = buffer.toString('utf-8')
-      } else if (['png', 'jpg', 'jpeg', 'gif', 'bmp'].includes(ext)) {
-        const Tesseract = await import('tesseract.js')
-        const { data: { text } } = await Tesseract.recognize(buffer, 'eng')
-        extractedText = text
-      } else if (ext === 'pptx') {
-        const JSZip = (await import('jszip')).default
-        const zip = await JSZip.loadAsync(buffer)
-        let text = ''
-        const slideFiles = Object.keys(zip.files).filter(f => f.match(/ppt\/slides\/slide\d+\.xml/))
-        for (const slideFile of slideFiles) {
-          const content = await zip.files[slideFile].async('text')
-          const matches = content.match(/<a:t>([^<]*)<\/a:t>/g)
-          if (matches) {
-            text += matches.map((m: string) => m.replace(/<\/?a:t>/g, '')).join(' ') + '\n'
-          }
-        }
-        extractedText = text
       } else {
-        // fallback: try to read as text
         extractedText = buffer.toString('utf-8')
       }
 
       if (!extractedText || extractedText.length < 100) {
         return NextResponse.json({ error: 'Could not extract sufficient text from file' }, { status: 400 })
       }
-      console.log(`✅ File extracted (length: ${extractedText.length})`)
+
+      console.log(`📄 File extracted (${extractedText.length} chars)`)
+
+      const chapter = formData.get('chapter') as string
+      if (chapter && extractedText.length > 0) {
+        console.log(`📖 Extracting chapter: ${chapter}`)
+        const chapterPrompt = `
+You are a text extraction assistant. Given the following text from a book/document, extract ONLY the content related to "${chapter}".
+
+Rules:
+1. If "${chapter}" is mentioned as a heading (e.g., "Chapter 4", "4.", "Section 4", "Page 50"), extract all text under that heading until the next major heading.
+2. If the chapter is not explicitly found, return the most relevant section of text (500-1000 words) that best matches "${chapter}".
+3. Keep the extracted content clean and readable.
+
+Text:
+${extractedText.slice(0, 8000)}
+
+Output ONLY the extracted content.
+`
+        try {
+          const extractResponse = await groq.chat.completions.create({
+            model: 'openai/gpt-oss-20b',
+            messages: [{ role: 'user', content: chapterPrompt }],
+            temperature: 0.1,
+            max_tokens: 3000,
+          })
+
+          const extractedChapter = extractResponse.choices[0].message.content || ''
+          if (extractedChapter.length > 100 && !extractedChapter.toLowerCase().includes('not found')) {
+            extractedText = extractedChapter
+            console.log(`✅ Chapter extracted (${extractedText.length} chars)`)
+          } else {
+            console.warn(`⚠️ Chapter "${chapter}" not found. Using full text (truncated).`)
+            extractedText = extractedText.slice(0, 5000)
+          }
+        } catch (err: any) {
+          console.warn('⚠️ Chapter extraction failed:', err.message)
+          extractedText = extractedText.slice(0, 5000)
+        }
+      } else {
+        extractedText = extractedText.slice(0, 5000)
+      }
     }
 
-    // ----- Generate quiz using AI -----
-    // ✅ language is passed here
+    // ========== 3. UNKNOWN SOURCE ==========
+    else {
+      return NextResponse.json({ error: 'Invalid source type' }, { status: 400 })
+    }
+
+    // ========== 4. FINAL CHECK ==========
+    if (!extractedText || extractedText.trim().length === 0) {
+      throw new Error('No content extracted. Please try a different source.')
+    }
+
+    // --- Generate Quiz ---
     const quizData = await generateQuiz(
       extractedText,
       difficulty,
@@ -95,14 +151,13 @@ export async function POST(request: NextRequest) {
       numShortQuestions
     )
 
-    // ----- Save to Supabase 'quizzes' table -----
+    // --- Save to Supabase ---
     const { data: quiz, error } = await supabase
       .from('quizzes')
       .insert([{
         user_id: user.id,
-        video_url: sourceType === 'video' ? sourceUrl : null,
-        file_name: sourceType === 'file' ? sourceUrl : null,
         source_type: sourceTypeDb,
+        source_url: sourceUrl,
         difficulty,
         language,
         summary: quizData.summary,
@@ -117,8 +172,8 @@ export async function POST(request: NextRequest) {
       throw new Error('Failed to save quiz to database')
     }
 
-    // ----- Also add to 'projects' table for dashboard stats -----
-    const projectName = `Quiz: ${sourceType === 'video' ? 'Video' : 'File'} (${language})`
+    // --- Add to projects ---
+    const projectName = `Quiz: ${sourceType === 'topic' ? 'Topic' : 'File'}`
     await supabase
       .from('projects')
       .insert([{
@@ -128,12 +183,12 @@ export async function POST(request: NextRequest) {
         description: `${difficulty} - ${language} - ${new Date().toLocaleDateString()}`,
       }])
 
-    console.log(`✅ Quiz saved successfully: ${quiz.id}`)
+    console.log(`✅ Quiz saved: ${quiz.id}`)
 
     return NextResponse.json({
       success: true,
       quizId: quiz.id,
-      ...quizData
+      ...quizData,
     })
 
   } catch (error: any) {
