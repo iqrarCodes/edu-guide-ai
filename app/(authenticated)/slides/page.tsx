@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, FileText, Sparkles, Trash2, ArrowRight, Clock, Loader2 } from 'lucide-react'
+import { SLIDE_TEMPLATES, TemplateId } from '@/lib/slide-templates'
 
 export default function SlidesList() {
   const router = useRouter()
@@ -14,6 +15,7 @@ export default function SlidesList() {
   const [showModal, setShowModal] = useState(false)
   const [newName, setNewName] = useState('')
   const [newDesc, setNewDesc] = useState('')
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('modern')
   const [submitting, setSubmitting] = useState(false)
 
   const fetchSlides = async () => {
@@ -22,7 +24,7 @@ export default function SlidesList() {
       .from('projects')
       .select(`
         id, name, description, created_at,
-        slides_data (id, status, outline, slides)
+        slides_data (id, status, outline, slides, template_id)
       `)
       .eq('type', 'slides')
       .order('created_at', { ascending: false })
@@ -61,10 +63,12 @@ export default function SlidesList() {
         .insert([{
           project_id: project.id,
           status: 'draft',
+          template_id: selectedTemplate,   // ✅ Store template
         }])
 
       setNewName('')
       setNewDesc('')
+      setSelectedTemplate('modern')
       setShowModal(false)
       router.push(`/slides/${project.id}`)
     }
@@ -120,53 +124,60 @@ export default function SlidesList() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((project) => (
-              <div
-                key={project.id}
-                className="group bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-white/30 hover:shadow-xl transition-all hover:-translate-y-1"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="font-bold text-gray-800 text-lg">{project.name}</h3>
-                    {project.description && (
-                      <p className="text-sm text-gray-500 mt-1">{project.description}</p>
-                    )}
+            {projects.map((project) => {
+              const templateId = project.slides_data?.[0]?.template_id || 'modern'
+              const template = SLIDE_TEMPLATES[templateId as TemplateId] || SLIDE_TEMPLATES.modern
+              return (
+                <div
+                  key={project.id}
+                  className="group bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-white/30 hover:shadow-xl transition-all hover:-translate-y-1"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-bold text-gray-800 text-lg">{project.name}</h3>
+                      {project.description && (
+                        <p className="text-sm text-gray-500 mt-1">{project.description}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleDelete(project.id)}
+                      className="text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => handleDelete(project.id)}
-                    className="text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-                <div className="flex items-center gap-2 mt-3">
-                  <span className={`text-xs px-3 py-1 rounded-full ${project.slides_data?.[0]?.status === 'completed'
+                  <div className="flex items-center gap-2 mt-3">
+                    <span className={`text-xs px-3 py-1 rounded-full ${project.slides_data?.[0]?.status === 'completed'
                       ? 'bg-green-100 text-green-700'
                       : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                    {project.slides_data?.[0]?.status || 'draft'}
-                  </span>
-                  <span className="text-xs text-gray-400 flex items-center gap-1">
-                    <Clock size={12} />
-                    {new Date(project.created_at).toLocaleDateString()}
-                  </span>
+                      }`}>
+                      {project.slides_data?.[0]?.status || 'draft'}
+                    </span>
+                    <span className="text-xs text-gray-400 flex items-center gap-1">
+                      <Clock size={12} />
+                      {new Date(project.created_at).toLocaleDateString()}
+                    </span>
+                    <span className="text-xs text-gray-400 flex items-center gap-1">
+                      {template.icon} {template.name}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => router.push(`/slides/${project.id}`)}
+                    className="mt-4 w-full bg-purple-50 hover:bg-purple-100 text-purple-700 py-2.5 rounded-xl text-sm font-medium transition flex items-center justify-center gap-2"
+                  >
+                    Open <ArrowRight size={16} />
+                  </button>
                 </div>
-                <button
-                  onClick={() => router.push(`/slides/${project.id}`)}
-                  className="mt-4 w-full bg-purple-50 hover:bg-purple-100 text-purple-700 py-2.5 rounded-xl text-sm font-medium transition flex items-center justify-center gap-2"
-                >
-                  Open <ArrowRight size={16} />
-                </button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
 
-      {/* Modal */}
+      {/* ===== NEW SLIDES MODAL with Template Picker ===== */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowModal(false)}>
-          <div className="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-8 shadow-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-2xl font-bold text-gray-800 mb-2">📊 New Slides Project</h2>
             <p className="text-sm text-gray-400 mb-6">Create a new AI-powered presentation.</p>
             <form onSubmit={handleCreate}>
@@ -181,7 +192,7 @@ export default function SlidesList() {
                   required
                 />
               </div>
-              <div className="mb-6">
+              <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
                 <textarea
                   placeholder="What is this presentation about?"
@@ -191,6 +202,47 @@ export default function SlidesList() {
                   className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition resize-none"
                 />
               </div>
+
+              {/* Template Selection */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">Choose Template Style</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {Object.values(SLIDE_TEMPLATES).map((template) => (
+                    <button
+                      key={template.id}
+                      type="button"
+                      onClick={() => setSelectedTemplate(template.id)}
+                      className={`p-3 rounded-xl border-2 text-left transition ${selectedTemplate === template.id
+                        ? 'border-purple-600 bg-purple-50 shadow-md'
+                        : 'border-gray-200 hover:border-purple-300'
+                        }`}
+                    >
+                      <div
+                        className="h-12 rounded-lg mb-2 flex items-center justify-center text-xs font-medium overflow-hidden relative"
+                        style={{ backgroundColor: `#${template.styles.colors.bg}` }}
+                      >
+                        <span style={{ color: `#${template.styles.colors.text}` }}>
+                          {template.icon} {template.name}
+                        </span>
+                        {template.styles.contentSlide.accentPosition === 'left' && (
+                          <div
+                            className="absolute left-0 top-0 h-full w-1"
+                            style={{ backgroundColor: `#${template.styles.colors.accent}` }}
+                          />
+                        )}
+                        {template.styles.titleSlide.decoration === 'bar' && (
+                          <div
+                            className="absolute bottom-0 left-1/4 w-1/2 h-1"
+                            style={{ backgroundColor: `#${template.styles.colors.accent}` }}
+                          />
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-600">{template.name}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex gap-3">
                 <button
                   type="button"
