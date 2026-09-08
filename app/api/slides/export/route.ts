@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import PptxGenJS from 'pptxgenjs'
 import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx'
-import { Buffer } from 'buffer'
 import { SLIDE_TEMPLATES, TemplateId } from '@/lib/slide-templates'
 
 export async function POST(request: NextRequest) {
@@ -53,14 +52,35 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// ----- PPTX Generator with Real Shapes & Layouts -----
+// ----- PPTX Generator (Fixed) -----
 async function generatePPTX(slides: any[], title: string, template: any): Promise<Buffer> {
   const colors = template.styles.colors
   const pptx = new PptxGenJS()
   pptx.defineLayout({ name: 'WIDE', width: 13.33, height: 7.5 })
   pptx.layout = 'WIDE'
 
-  // ----- 1. TITLE SLIDE (with decoration) -----
+  const sanitize = (text: string): string => {
+    if (!text) return ''
+    let cleaned = text.replace(/[\x00-\x09\x0B-\x1F\x7F]/g, '')
+    cleaned = cleaned.replace(/[💡✅▶✔🎨✨📚💼🌿🌙]/g, (match) => {
+      const map: Record<string, string> = {
+        '💡': '(Tip)',
+        '✅': '[✓]',
+        '▶': '▸',
+        '✔': '[✓]',
+        '🎨': '[Art]',
+        '✨': '[Star]',
+        '📚': '[Book]',
+        '💼': '[Briefcase]',
+        '🌿': '[Leaf]',
+        '🌙': '[Moon]',
+      }
+      return map[match] || match
+    })
+    return cleaned
+  }
+
+  // Title Slide
   const titleSlide = pptx.addSlide()
   titleSlide.background = { color: colors.bg }
 
@@ -72,13 +92,13 @@ async function generatePPTX(slides: any[], title: string, template: any): Promis
     })
   } else if (template.styles.titleSlide.decoration === 'circle') {
     titleSlide.addShape(pptx.ShapeType.ellipse, {
-      x: 8, y: 0, w: 5, h: 5,
-      fill: { color: colors.accent, alpha: 20 },   // ✅ Fixed: opacity → alpha
-      line: { color: colors.accent, alpha: 20 },   // ✅ Fixed: opacity → alpha
+      x: 8, y: 0, w: 4, h: 4,
+      fill: { color: colors.accent },
+      line: { color: colors.accent },
     })
   }
 
-  titleSlide.addText(title, {
+  titleSlide.addText(sanitize(title), {
     x: 0.5, y: 1.5, w: 12.33, h: 2,
     fontSize: template.styles.titleSlide.titleFontSize,
     color: colors.text, bold: true,
@@ -91,21 +111,18 @@ async function generatePPTX(slides: any[], title: string, template: any): Promis
     align: template.styles.titleSlide.alignment,
   })
 
-  // ----- 2. CONTENT SLIDES (with accent bars, different bullet styles) -----
+  // Content Slides
   slides.forEach((slideData: any, idx: number) => {
     const slide = pptx.addSlide()
     slide.background = { color: colors.bg }
 
-    // Top Accent Bar (Corporate)
     if (template.styles.contentSlide.accentPosition === 'top') {
       slide.addShape(pptx.ShapeType.rect, {
-        x: 0, y: 0, w: 13.33, h: 0.5,
+        x: 0, y: 0, w: 13.33, h: 0.4,
         fill: { color: colors.primary },
         line: { color: colors.primary },
       })
     }
-
-    // Left Accent Bar (Modern)
     if (template.styles.contentSlide.accentPosition === 'left') {
       slide.addShape(pptx.ShapeType.rect, {
         x: 0, y: 0, w: 0.3, h: 7.5,
@@ -115,25 +132,24 @@ async function generatePPTX(slides: any[], title: string, template: any): Promis
     }
 
     const titleX = template.styles.contentSlide.accentPosition === 'left' ? 0.7 : 0.5
-    slide.addText(slideData.title || `Slide ${idx + 1}`, {
+    slide.addText(sanitize(slideData.title || `Slide ${idx + 1}`), {
       x: titleX, y: 0.5, w: 11, h: 0.8,
       fontSize: 28, color: colors.text, bold: true,
     })
 
-    // Bullets with different styles
     const bullets = slideData.bullets || ['No bullet points provided.']
     let yPos = 1.8
     const bulletStyle = template.styles.contentSlide.bulletStyle
     let prefix: string | ((i: number) => string) = '• '
-    if (bulletStyle === 'arrow') prefix = '▶ '
-    else if (bulletStyle === 'check') prefix = '✅ '
-    else if (bulletStyle === 'number') prefix = (i: number) => `${i+1}. `
+    if (bulletStyle === 'arrow') prefix = '▸ '
+    else if (bulletStyle === 'check') prefix = '✓ '
+    else if (bulletStyle === 'number') prefix = (i: number) => `${i + 1}. `
     else prefix = '• '
 
     bullets.forEach((bullet: string, i: number) => {
       if (i > 7) return
       const p = typeof prefix === 'function' ? prefix(i) : prefix
-      slide.addText(`${p}${bullet}`, {
+      slide.addText(`${p}${sanitize(bullet)}`, {
         x: titleX + 0.5, y: yPos, w: 10.5, h: 0.7,
         fontSize: 17, color: colors.text,
         valign: 'middle',
@@ -142,34 +158,33 @@ async function generatePPTX(slides: any[], title: string, template: any): Promis
       yPos += 0.75
     })
 
-    // Key Takeaway (sticky note shape)
     if (slideData.key_takeaway) {
       const takeawayY = Math.min(yPos + 0.5, 6.2)
       slide.addShape(pptx.ShapeType.rect, {
         x: 1.5, y: takeawayY, w: 10, h: 0.8,
         fill: { color: 'FEF3C7' },
         line: { color: 'FCD34D' },
-        rectRadius: 4,
+        rectRadius: 2,
       })
-      slide.addText(`💡 ${slideData.key_takeaway}`, {
+      slide.addText(`💡 ${sanitize(slideData.key_takeaway)}`, {
         x: 1.8, y: takeawayY + 0.1, w: 9.5, h: 0.6,
         fontSize: 14, color: '92400E', italic: true,
         align: 'justify',
       })
     }
 
-    // Slide number
     slide.addText(`${idx + 1} / ${slides.length}`, {
       x: 11.5, y: 7, w: 1.5, h: 0.4,
       fontSize: 12, color: '9CA3AF', align: 'right',
     })
   })
 
+  // ✅ FIXED: return buffer directly
   const buffer = await pptx.write({ outputType: 'nodebuffer' })
-  return Buffer.from(buffer as any)
+  return buffer as Buffer   // ✅ Red line khatam
 }
 
-// ----- DOCX Generator (respects colors) -----
+// ----- DOCX Generator -----
 async function generateDOCX(slides: any[], title: string, colors: any): Promise<Buffer> {
   const doc = new Document({
     sections: [{
@@ -227,5 +242,5 @@ async function generateDOCX(slides: any[], title: string, colors: any): Promise<
     }],
   })
   const buffer = await Packer.toBuffer(doc)
-  return Buffer.from(buffer)
+  return buffer
 }
