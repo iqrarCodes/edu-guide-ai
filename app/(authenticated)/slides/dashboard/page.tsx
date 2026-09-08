@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { motion } from 'framer-motion'
@@ -8,10 +8,12 @@ import {
   Plus, LayoutTemplate, Download, FileText, Layers,
   Star, Sparkles, Clock, ArrowRight
 } from 'lucide-react'
+import { SLIDE_TEMPLATES } from '@/lib/slide-templates'
 
 export default function SlidesDashboard() {
   const router = useRouter()
   const supabase = createClient()
+  const templatesRef = useRef<HTMLDivElement>(null)
 
   const [presentations, setPresentations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -37,7 +39,7 @@ export default function SlidesDashboard() {
           name,
           created_at,
           updated_at,
-          slides_data (id, slides, status)
+          slides_data (id, slides, status, template_id)
         `)
         .eq('type', 'slides')
         .order('updated_at', { ascending: false })
@@ -54,6 +56,10 @@ export default function SlidesDashboard() {
     router.push(`/slides/${id}`)
   }
 
+  const handleCreateWithTemplate = (templateId: string) => {
+    router.push(`/slides?template=${templateId}`)
+  }
+
   const quickActions = [
     {
       icon: <Plus size={20} />,
@@ -64,7 +70,7 @@ export default function SlidesDashboard() {
     {
       icon: <LayoutTemplate size={20} />,
       label: 'Browse Templates',
-      action: () => router.push('/templates'),
+      action: () => templatesRef.current?.scrollIntoView({ behavior: 'smooth' }),
       color: 'from-blue-500 to-cyan-500',
     },
     {
@@ -119,7 +125,7 @@ export default function SlidesDashboard() {
             { label: 'Presentations', value: totalPresentations, icon: FileText, color: 'from-blue-500 to-cyan-500', delay: 0 },
             { label: 'Total Slides', value: totalSlides, icon: Layers, color: 'from-purple-500 to-pink-500', delay: 0.1 },
             { label: 'Avg Rating', value: '4.9', icon: Star, color: 'from-yellow-500 to-orange-500', delay: 0.2 },
-            { label: 'Templates', value: '10+', icon: LayoutTemplate, color: 'from-green-500 to-emerald-500', delay: 0.3 },
+            { label: 'Templates', value: '4', icon: LayoutTemplate, color: 'from-green-500 to-emerald-500', delay: 0.3 },
           ].map((stat, idx) => (
             <motion.div
               key={idx}
@@ -159,6 +165,57 @@ export default function SlidesDashboard() {
           </div>
         </div>
 
+        {/* ===== 🎨 TEMPLATES GALLERY ===== */}
+        <div ref={templatesRef} className="mb-8 scroll-mt-20">
+          <h3 className="text-lg font-bold text-gray-800 mb-4">🎨 Available Templates</h3>
+          <p className="text-gray-400 text-sm mb-4">Choose a template to start your presentation with a professional design.</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {Object.values(SLIDE_TEMPLATES).map((template) => (
+              <motion.div
+                key={template.id}
+                className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-white/30 hover:shadow-xl transition cursor-pointer hover:-translate-y-1 group"
+                whileHover={{ y: -6 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 * (Object.values(SLIDE_TEMPLATES).indexOf(template) + 1) }}
+                onClick={() => handleCreateWithTemplate(template.id)}
+              >
+                <div
+                  className="h-20 rounded-xl mb-3 flex items-center justify-center text-sm font-medium overflow-hidden relative"
+                  style={{ backgroundColor: `#${template.styles.colors.bg}` }}
+                >
+                  <span style={{ color: `#${template.styles.colors.text}` }}>
+                    {template.icon} {template.name}
+                  </span>
+                  {template.styles.contentSlide.accentPosition === 'left' && (
+                    <div
+                      className="absolute left-0 top-0 h-full w-1"
+                      style={{ backgroundColor: `#${template.styles.colors.accent}` }}
+                    />
+                  )}
+                  {template.styles.titleSlide.decoration === 'bar' && (
+                    <div
+                      className="absolute bottom-0 left-1/4 w-1/2 h-1"
+                      style={{ backgroundColor: `#${template.styles.colors.accent}` }}
+                    />
+                  )}
+                </div>
+                <p className="font-semibold text-gray-800 text-sm">{template.name}</p>
+                <p className="text-xs text-gray-400">{template.description}</p>
+                <button
+                  className="mt-3 w-full bg-purple-50 hover:bg-purple-100 text-purple-600 text-xs font-medium py-1.5 rounded-xl transition opacity-0 group-hover:opacity-100"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleCreateWithTemplate(template.id)
+                  }}
+                >
+                  Use Template →
+                </button>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
@@ -191,6 +248,8 @@ export default function SlidesDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {recentPresentations.map((pres, idx) => {
                 const slideCount = pres.slides_data?.[0]?.slides?.length || 0
+                const templateId = pres.slides_data?.[0]?.template_id || 'modern'
+                const template = SLIDE_TEMPLATES[templateId as keyof typeof SLIDE_TEMPLATES] || SLIDE_TEMPLATES.modern
                 return (
                   <motion.div
                     key={pres.id}
@@ -206,7 +265,7 @@ export default function SlidesDashboard() {
                         <h4 className="font-bold text-gray-800">{pres.name}</h4>
                         <p className="text-xs text-gray-400 mt-1">{slideCount} slides</p>
                       </div>
-                      <span className="text-2xl">📄</span>
+                      <span className="text-2xl">{template.icon}</span>
                     </div>
                     <div className="flex items-center justify-between mt-4">
                       <span className="text-xs text-gray-400">
