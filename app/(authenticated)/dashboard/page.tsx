@@ -7,9 +7,7 @@ import { toast } from 'sonner'
 import {
   LayoutDashboard, FileText, HelpCircle, BookOpen,
   Library, History, Bookmark, Settings, LifeBuoy,
-  MessageCircle, Menu,
-  Plus,
-
+  MessageCircle, Menu, Plus,
 } from 'lucide-react'
 
 import { Project, ProjectType, NavItem } from '@/components/dashboard/types'
@@ -23,13 +21,13 @@ import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
 import ChatWidget from '@/components/ChatWidget'
 
 // ============================================================
-// NAV ITEMS
+// NAV ITEMS – All point to dashboards
 // ============================================================
 const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', active: true, href: '/dashboard' },
-  { icon: FileText, label: 'AI Slides', active: false, href: '/slides' },
-  { icon: HelpCircle, label: 'AI Quizzes', active: false, href: '/quiz' },
-  { icon: BookOpen, label: 'Lesson Planner', active: false, href: '/lesson-planner' },
+  { icon: FileText, label: 'AI Slides', active: false, href: '/slides/dashboard' },
+  { icon: HelpCircle, label: 'AI Quizzes', active: false, href: '/quiz/dashboard' },
+  { icon: BookOpen, label: 'Lesson Planner', active: false, href: '/lesson-planner/dashboard' },
   { icon: MessageCircle, label: 'AI Chat', active: false, href: '/chat' },
   { icon: Library, label: 'My Library', active: false, href: '/library' },
   { icon: History, label: 'History', active: false, href: '/history' },
@@ -301,7 +299,7 @@ export default function Dashboard() {
         </header>
 
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
-          {/* Welcome Banner (Email removed) */}
+          {/* Welcome Banner */}
           <div className="relative overflow-hidden bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-3xl p-8 mb-8 text-white shadow-xl">
             <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
@@ -311,7 +309,6 @@ export default function Dashboard() {
                 <p className="text-purple-100 mt-2 max-w-xl">
                   Your AI-powered learning hub is ready. Continue your journey with smart tools.
                 </p>
-                {/* Email removed from here - now in sidebar */}
               </div>
               <div className="flex items-center gap-3 flex-wrap">
                 <button
@@ -327,16 +324,34 @@ export default function Dashboard() {
           {/* Stats */}
           <StatsGrid stats={stats} />
 
-          {/* Quick Actions */}
+          {/* Quick Actions – All to Dashboards */}
           <QuickActions
             actions={[
-              { icon: FileText, label: 'New Slides', desc: 'Create presentation', color: 'blue', onClick: () => router.push('/slides/dashboard') },
-              { icon: HelpCircle, label: 'New Quiz', desc: 'Generate quiz', color: 'purple', onClick: () => router.push('/quiz/dasshboard') },
-              { icon: BookOpen, label: 'New Lesson Plan', desc: 'Plan your class', color: 'green', onClick: () => router.push('/lesson-planner/dashboard') },
+              {
+                icon: FileText,
+                label: 'Slides Dashboard',
+                desc: 'Manage presentations',
+                color: 'blue',
+                onClick: () => router.push('/slides/dashboard'),
+              },
+              {
+                icon: HelpCircle,
+                label: 'Quiz Dashboard',
+                desc: 'Manage quizzes',
+                color: 'purple',
+                onClick: () => router.push('/quiz/dashboard'),
+              },
+              {
+                icon: BookOpen,
+                label: 'Lesson Planner Dashboard',
+                desc: 'Manage lesson plans',
+                color: 'green',
+                onClick: () => router.push('/lesson-planner/dashboard'),
+              },
             ]}
           />
 
-          {/* Project Sections */}
+          {/* Project Sections – View All → Dashboards */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <ProjectSection
               title="Recent Slides"
@@ -345,7 +360,7 @@ export default function Dashboard() {
               projects={slidesProjects}
               emptyIcon="📊"
               emptyText="No slides yet"
-              createLink="/slides"
+              createLink="/slides/dashboard"   // ✅ Dashboard link
               onLaunch={handleLaunch}
               onDelete={handleDeleteProject}
             />
@@ -356,7 +371,7 @@ export default function Dashboard() {
               projects={quizzesProjects}
               emptyIcon="🧠"
               emptyText="No quizzes yet"
-              createLink="/quiz"
+              createLink="/quiz/dashboard"     // ✅ Dashboard link
               onLaunch={handleLaunch}
               onDelete={handleDeleteProject}
             />
@@ -367,7 +382,7 @@ export default function Dashboard() {
               projects={lessonPlansProjects}
               emptyIcon="📚"
               emptyText="No lesson plans yet"
-              createLink="/lesson-planner"
+              createLink="/lesson-planner/dashboard"   // ✅ Dashboard link
               onLaunch={handleLaunch}
               onDelete={handleDeleteProject}
             />
