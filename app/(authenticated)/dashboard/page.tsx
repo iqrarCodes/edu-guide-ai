@@ -7,8 +7,8 @@ import { toast } from 'sonner'
 import {
   LayoutDashboard, FileText, HelpCircle, BookOpen,
   Library, History, Bookmark, Settings, LifeBuoy,
-  MessageCircle, Menu,    
-  Plus,     
+  MessageCircle, Menu,
+  Plus,
 
 } from 'lucide-react'
 
@@ -330,9 +330,9 @@ export default function Dashboard() {
           {/* Quick Actions */}
           <QuickActions
             actions={[
-              { icon: FileText, label: 'New Slides', desc: 'Create presentation', color: 'blue', onClick: () => router.push('/slides') },
-              { icon: HelpCircle, label: 'New Quiz', desc: 'Generate quiz', color: 'purple', onClick: () => router.push('/quiz') },
-              { icon: BookOpen, label: 'New Lesson Plan', desc: 'Plan your class', color: 'green', onClick: () => router.push('/lesson-planner') },
+              { icon: FileText, label: 'New Slides', desc: 'Create presentation', color: 'blue', onClick: () => router.push('/slides/dashboard') },
+              { icon: HelpCircle, label: 'New Quiz', desc: 'Generate quiz', color: 'purple', onClick: () => router.push('/quiz/dasshboard') },
+              { icon: BookOpen, label: 'New Lesson Plan', desc: 'Plan your class', color: 'green', onClick: () => router.push('/lesson-planner/dashboard') },
             ]}
           />
 
