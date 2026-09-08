@@ -52,16 +52,19 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// ----- PPTX Generator (Fixed) -----
+// ===== SAFE PPTX GENERATOR (No complex shapes, no ellipses, no rounded corners) =====
 async function generatePPTX(slides: any[], title: string, template: any): Promise<Buffer> {
   const colors = template.styles.colors
   const pptx = new PptxGenJS()
   pptx.defineLayout({ name: 'WIDE', width: 13.33, height: 7.5 })
   pptx.layout = 'WIDE'
 
+  // Sanitize text (remove control characters and dangerous emojis)
   const sanitize = (text: string): string => {
     if (!text) return ''
+    // Remove control characters (except newline)
     let cleaned = text.replace(/[\x00-\x09\x0B-\x1F\x7F]/g, '')
+    // Replace emojis with safe text
     cleaned = cleaned.replace(/[💡✅▶✔🎨✨📚💼🌿🌙]/g, (match) => {
       const map: Record<string, string> = {
         '💡': '(Tip)',
@@ -80,23 +83,9 @@ async function generatePPTX(slides: any[], title: string, template: any): Promis
     return cleaned
   }
 
-  // Title Slide
+  // ----- TITLE SLIDE (simple, no shapes) -----
   const titleSlide = pptx.addSlide()
   titleSlide.background = { color: colors.bg }
-
-  if (template.styles.titleSlide.decoration === 'bar') {
-    titleSlide.addShape(pptx.ShapeType.rect, {
-      x: 2, y: 5.5, w: 9.33, h: 0.2,
-      fill: { color: colors.accent },
-      line: { color: colors.accent },
-    })
-  } else if (template.styles.titleSlide.decoration === 'circle') {
-    titleSlide.addShape(pptx.ShapeType.ellipse, {
-      x: 8, y: 0, w: 4, h: 4,
-      fill: { color: colors.accent },
-      line: { color: colors.accent },
-    })
-  }
 
   titleSlide.addText(sanitize(title), {
     x: 0.5, y: 1.5, w: 12.33, h: 2,
@@ -111,21 +100,24 @@ async function generatePPTX(slides: any[], title: string, template: any): Promis
     align: template.styles.titleSlide.alignment,
   })
 
-  // Content Slides
+  // (Optional) Add a simple rectangle as accent – but only if not too complex
+  if (template.styles.titleSlide.decoration === 'bar') {
+    titleSlide.addShape(pptx.ShapeType.rect, {
+      x: 2, y: 5.8, w: 9.33, h: 0.15,
+      fill: { color: colors.accent },
+      line: { color: colors.accent },
+    })
+  }
+
+  // ----- CONTENT SLIDES -----
   slides.forEach((slideData: any, idx: number) => {
     const slide = pptx.addSlide()
     slide.background = { color: colors.bg }
 
-    if (template.styles.contentSlide.accentPosition === 'top') {
-      slide.addShape(pptx.ShapeType.rect, {
-        x: 0, y: 0, w: 13.33, h: 0.4,
-        fill: { color: colors.primary },
-        line: { color: colors.primary },
-      })
-    }
+    // Simple left accent bar (rect, no rounded corners)
     if (template.styles.contentSlide.accentPosition === 'left') {
       slide.addShape(pptx.ShapeType.rect, {
-        x: 0, y: 0, w: 0.3, h: 7.5,
+        x: 0, y: 0, w: 0.2, h: 7.5,
         fill: { color: colors.accent },
         line: { color: colors.accent },
       })
@@ -143,7 +135,7 @@ async function generatePPTX(slides: any[], title: string, template: any): Promis
     let prefix: string | ((i: number) => string) = '• '
     if (bulletStyle === 'arrow') prefix = '▸ '
     else if (bulletStyle === 'check') prefix = '✓ '
-    else if (bulletStyle === 'number') prefix = (i: number) => `${i + 1}. `
+    else if (bulletStyle === 'number') prefix = (i: number) => `${i+1}. `
     else prefix = '• '
 
     bullets.forEach((bullet: string, i: number) => {
@@ -158,33 +150,33 @@ async function generatePPTX(slides: any[], title: string, template: any): Promis
       yPos += 0.75
     })
 
+    // Key Takeaway – simple rectangle (no rounded corners)
     if (slideData.key_takeaway) {
       const takeawayY = Math.min(yPos + 0.5, 6.2)
       slide.addShape(pptx.ShapeType.rect, {
-        x: 1.5, y: takeawayY, w: 10, h: 0.8,
+        x: 1.5, y: takeawayY, w: 10, h: 0.7,
         fill: { color: 'FEF3C7' },
         line: { color: 'FCD34D' },
-        rectRadius: 2,
       })
       slide.addText(`💡 ${sanitize(slideData.key_takeaway)}`, {
-        x: 1.8, y: takeawayY + 0.1, w: 9.5, h: 0.6,
-        fontSize: 14, color: '92400E', italic: true,
+        x: 1.8, y: takeawayY + 0.1, w: 9.5, h: 0.5,
+        fontSize: 13, color: '92400E', italic: true,
         align: 'justify',
       })
     }
 
+    // Slide number
     slide.addText(`${idx + 1} / ${slides.length}`, {
       x: 11.5, y: 7, w: 1.5, h: 0.4,
       fontSize: 12, color: '9CA3AF', align: 'right',
     })
   })
 
-  // ✅ FIXED: return buffer directly
   const buffer = await pptx.write({ outputType: 'nodebuffer' })
-  return buffer as Buffer   // ✅ Red line khatam
+  return buffer as Buffer
 }
 
-// ----- DOCX Generator -----
+// ----- DOCX Generator (remains the same) -----
 async function generateDOCX(slides: any[], title: string, colors: any): Promise<Buffer> {
   const doc = new Document({
     sections: [{
