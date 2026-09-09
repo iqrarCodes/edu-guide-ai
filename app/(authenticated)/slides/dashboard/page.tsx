@@ -171,7 +171,7 @@ export default function SlidesDashboard() {
           </div>
         </div>
 
-        {/* Templates Gallery */}
+        {/* ===== 🎨 TEMPLATES GALLERY (WITH REAL PREVIEW) ===== */}
         <div ref={templatesRef} className="mb-8 scroll-mt-20">
           <h3 className="text-lg font-bold text-gray-800 mb-4">🎨 Available Templates</h3>
           <p className="text-gray-400 text-sm mb-4">Click "Preview" to see the actual PPTX file design.</p>
@@ -208,11 +208,11 @@ export default function SlidesDashboard() {
                 <p className="font-semibold text-gray-800 text-sm">{template.name}</p>
                 <p className="text-xs text-gray-400">{template.description}</p>
                 <div className="flex items-center gap-2 mt-3">
+                  {/* ✅ REAL PREVIEW (No Alert) */}
                   <button
                     className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-600 text-xs font-medium py-1.5 rounded-xl transition flex items-center justify-center gap-1"
                     onClick={(e) => {
                       e.stopPropagation()
-                      // For actual PPTX preview, use Office Online Viewer
                       const fileUrl = `/templates/${template.id}.pptx`
                       window.open(
                         `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(
