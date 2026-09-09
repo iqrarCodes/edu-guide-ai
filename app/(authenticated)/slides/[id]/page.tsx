@@ -187,8 +187,8 @@ export default function SlidesEditor() {
         }
     }
 
-    // ----- Export -----
-    const handleExport = async (format: string) => {
+    // ===== NEW: Template-Based Export (Replaces old export) =====
+    const handleExport = async () => {
         if (!slides || slides.length === 0) {
             setError('No slides to export. Generate slides first.')
             return
@@ -199,33 +199,35 @@ export default function SlidesEditor() {
         setSuccess('')
 
         try {
-            const res = await fetch('/api/slides/export', {
+            const res = await fetch('/api/slides/export-template', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    slides,
-                    projectName: project?.name || 'Presentation',
-                    format,
                     templateId: selectedTemplate,
+                    slides: slides.map((s: any) => ({
+                        title: s.title,
+                        bullets: s.bullets || [],
+                    })),
+                    title: project?.name || 'Presentation',
                 }),
             })
 
             if (!res.ok) {
-                const errorData = await res.json()
-                throw new Error(errorData.error || 'Export failed')
+                const err = await res.json()
+                throw new Error(err.error || 'Export failed')
             }
 
             const blob = await res.blob()
             const url = window.URL.createObjectURL(blob)
             const a = document.createElement('a')
             a.href = url
-            a.download = `${project?.name || 'presentation'}.${format}`
+            a.download = `${project?.name || 'presentation'}.pptx`
             document.body.appendChild(a)
             a.click()
             document.body.removeChild(a)
             window.URL.revokeObjectURL(url)
 
-            setSuccess(`✅ ${format.toUpperCase()} exported successfully!`)
+            setSuccess('✅ Presentation exported successfully!')
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -263,29 +265,14 @@ export default function SlidesEditor() {
                         <p className="text-gray-500 text-sm">Generate AI-powered presentations in seconds</p>
                     </div>
                     {slides && (
-                        <div className="flex gap-2 flex-wrap">
-                            <button
-                                onClick={() => handleExport('pptx')}
-                                disabled={exporting}
-                                className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2.5 rounded-xl font-medium transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                            >
-                                <Download size={16} /> PPTX
-                            </button>
-                            <button
-                                onClick={() => handleExport('pdf')}
-                                disabled={exporting}
-                                className="bg-red-50 hover:bg-red-100 text-red-700 px-4 py-2.5 rounded-xl font-medium transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                            >
-                                <Download size={16} /> PDF
-                            </button>
-                            <button
-                                onClick={() => handleExport('docx')}
-                                disabled={exporting}
-                                className="bg-green-50 hover:bg-green-100 text-green-700 px-4 py-2.5 rounded-xl font-medium transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                            >
-                                <Download size={16} /> Word
-                            </button>
-                        </div>
+                        <button
+                            onClick={handleExport}
+                            disabled={exporting}
+                            className="bg-green-50 hover:bg-green-100 text-green-700 px-4 py-2.5 rounded-xl font-medium transition flex items-center gap-2 disabled:opacity-50 text-sm"
+                        >
+                            <Download size={16} />
+                            {exporting ? 'Exporting...' : 'Download PPTX (Template)'}
+                        </button>
                     )}
                 </div>
 
@@ -377,7 +364,7 @@ export default function SlidesEditor() {
                     <button
                         onClick={handleGenerateOutline}
                         disabled={generatingOutline}
-                        className="mt-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-3 rounded-2xl font-medium hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="mt-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-3 rounded-2xl font-medium hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
                     >
                         {generatingOutline ? (
                             <><Loader2 size={18} className="animate-spin" /> Generating Outline...</>
@@ -408,7 +395,7 @@ export default function SlidesEditor() {
                         <button
                             onClick={handleGenerateSlides}
                             disabled={generatingSlides}
-                            className="mt-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-8 py-3 rounded-2xl font-medium hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="mt-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-8 py-3 rounded-2xl font-medium hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
                         >
                             {generatingSlides ? (
                                 <><Loader2 size={18} className="animate-spin" /> Generating Slides...</>
@@ -419,7 +406,7 @@ export default function SlidesEditor() {
                     </div>
                 )}
 
-                {/* 🎨 TEMPLATE PREVIEW - ALWAYS VISIBLE */}
+                {/* 🎨 TEMPLATE PREVIEW */}
                 <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-white/30 mb-6">
                     <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                         🎨 Choose Template
@@ -450,33 +437,26 @@ export default function SlidesEditor() {
                                         borderColor: colors.accent + '40',
                                     }}
                                 >
-                                    {/* Image Upload */}
-                                    <div className="mb-4">
-                                        <ImageUpload
-                                            onImageUpload={(file, preview) => {
-                                                setSlideImages(prev => ({ ...prev, [idx]: preview }))
-                                            }}
-                                            currentImage={slideImages[idx]}
-                                            onRemove={() => {
-                                                setSlideImages(prev => {
-                                                    const updated = { ...prev }
-                                                    delete updated[idx]
-                                                    return updated
-                                                })
-                                            }}
-                                            placeholder="📷 Add image"
-                                        />
-                                    </div>
-
-                                    {/* Title */}
+                                    <ImageUpload
+                                        onImageUpload={(file, preview) => {
+                                            setSlideImages(prev => ({ ...prev, [idx]: preview }))
+                                        }}
+                                        currentImage={slideImages[idx]}
+                                        onRemove={() => {
+                                            setSlideImages(prev => {
+                                                const updated = { ...prev }
+                                                delete updated[idx]
+                                                return updated
+                                            })
+                                        }}
+                                        placeholder="📷 Add image"
+                                    />
                                     <div
                                         className="text-lg font-bold mb-3"
                                         style={{ color: colors.title }}
                                     >
                                         {idx + 1}. {slide.title}
                                     </div>
-
-                                    {/* Bullets with justify & highlights */}
                                     <ul className="space-y-2">
                                         {slide.bullets?.map((bullet: string, bi: number) => (
                                             <li
@@ -489,8 +469,6 @@ export default function SlidesEditor() {
                                             </li>
                                         ))}
                                     </ul>
-
-                                    {/* Key Takeaway */}
                                     {slide.key_takeaway && (
                                         <p
                                             className="mt-3 text-xs italic p-2 rounded-lg text-justify"
