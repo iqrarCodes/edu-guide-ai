@@ -35,7 +35,6 @@ export interface TemplateDefinition {
 }
 
 export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
-    // ----- EXISTING 4 (keep as is) -----
     modern: {
         id: 'modern',
         name: 'Modern',
@@ -80,8 +79,6 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
             colors: { primary: '0369A1', secondary: '38BDF8', bg: 'FFFFFF', text: '1E293B', accent: '0369A1', cardBg: 'F0F9FF' },
         },
     },
-
-    // ----- NEW 12 TEMPLATES (Add These) -----
     thesis: {
         id: 'thesis',
         name: 'Thesis Defense',

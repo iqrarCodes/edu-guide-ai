@@ -187,7 +187,7 @@ export default function SlidesEditor() {
         }
     }
 
-    // ===== NEW: Template-Based Export (Replaces old export) =====
+    // ----- Export (Template-Based) -----
     const handleExport = async () => {
         if (!slides || slides.length === 0) {
             setError('No slides to export. Generate slides first.')

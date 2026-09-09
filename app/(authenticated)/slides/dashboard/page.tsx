@@ -6,9 +6,9 @@ import { createClient } from '@/lib/supabase/client'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, LayoutTemplate, Download, FileText, Layers,
-  Star, Sparkles, Clock, ArrowRight, X, Eye
+  Star, Sparkles, Clock, ArrowRight, Eye, X
 } from 'lucide-react'
-import { SLIDE_TEMPLATES } from '@/lib/slide-templates'
+import { SLIDE_TEMPLATES, TemplateId } from '@/lib/slide-templates'
 
 export default function SlidesDashboard() {
   const router = useRouter()
@@ -18,7 +18,7 @@ export default function SlidesDashboard() {
   const [presentations, setPresentations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [userName, setUserName] = useState('Guest')
-  const [previewTemplate, setPreviewTemplate] = useState<any>(null)
+  const [previewTemplate, setPreviewTemplate] = useState<any | null>(null)
 
   const totalPresentations = presentations.length
   const totalSlides = presentations.reduce(
@@ -36,12 +36,12 @@ export default function SlidesDashboard() {
       const { data, error } = await supabase
         .from('projects')
         .select(`
-          id,
-          name,
-          created_at,
-          updated_at,
-          slides_data (id, slides, status, template_id)
-        `)
+              id,
+              name,
+              created_at,
+              updated_at,
+              slides_data (id, slides, status, template_id)
+            `)
         .eq('type', 'slides')
         .order('updated_at', { ascending: false })
 
@@ -94,6 +94,7 @@ export default function SlidesDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50/30 p-6 md:p-8">
       <div className="max-w-6xl mx-auto">
+        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
@@ -110,6 +111,7 @@ export default function SlidesDashboard() {
           </button>
         </div>
 
+        {/* Welcome */}
         <motion.div
           className="mb-8"
           initial={{ opacity: 0, y: -10 }}
@@ -122,12 +124,13 @@ export default function SlidesDashboard() {
           <p className="text-gray-500 text-sm mt-1">Here's an overview of your presentations.</p>
         </motion.div>
 
+        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
             { label: 'Presentations', value: totalPresentations, icon: FileText, color: 'from-blue-500 to-cyan-500', delay: 0 },
             { label: 'Total Slides', value: totalSlides, icon: Layers, color: 'from-purple-500 to-pink-500', delay: 0.1 },
             { label: 'Avg Rating', value: '4.9', icon: Star, color: 'from-yellow-500 to-orange-500', delay: 0.2 },
-            { label: 'Templates', value: '4', icon: LayoutTemplate, color: 'from-green-500 to-emerald-500', delay: 0.3 },
+            { label: 'Templates', value: Object.keys(SLIDE_TEMPLATES).length, icon: LayoutTemplate, color: 'from-green-500 to-emerald-500', delay: 0.3 },
           ].map((stat, idx) => (
             <motion.div
               key={idx}
@@ -145,6 +148,7 @@ export default function SlidesDashboard() {
           ))}
         </div>
 
+        {/* Quick Actions */}
         <div className="mb-8">
           <h3 className="text-lg font-bold text-gray-800 mb-4">⚡ Quick Actions</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -167,10 +171,10 @@ export default function SlidesDashboard() {
           </div>
         </div>
 
-        {/* ===== 🎨 TEMPLATES GALLERY ===== */}
+        {/* Templates Gallery */}
         <div ref={templatesRef} className="mb-8 scroll-mt-20">
           <h3 className="text-lg font-bold text-gray-800 mb-4">🎨 Available Templates</h3>
-          <p className="text-gray-400 text-sm mb-4">Click on a template to preview it. Use the "Use Template" button to create a presentation.</p>
+          <p className="text-gray-400 text-sm mb-4">Click "Preview" to see the actual PPTX file design.</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {Object.values(SLIDE_TEMPLATES).map((template) => (
               <motion.div
@@ -180,9 +184,7 @@ export default function SlidesDashboard() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.1 * (Object.values(SLIDE_TEMPLATES).indexOf(template) + 1) }}
-                onClick={() => setPreviewTemplate(template)}
               >
-                {/* Mini Preview */}
                 <div
                   className="h-20 rounded-xl mb-3 flex items-center justify-center text-sm font-medium overflow-hidden relative"
                   style={{ backgroundColor: `#${template.styles.colors.bg}` }}
@@ -210,7 +212,14 @@ export default function SlidesDashboard() {
                     className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-600 text-xs font-medium py-1.5 rounded-xl transition flex items-center justify-center gap-1"
                     onClick={(e) => {
                       e.stopPropagation()
-                      setPreviewTemplate(template)
+                      // For actual PPTX preview, use Office Online Viewer
+                      const fileUrl = `/templates/${template.id}.pptx`
+                      window.open(
+                        `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(
+                          window.location.origin + fileUrl
+                        )}`,
+                        '_blank'
+                      )
                     }}
                   >
                     <Eye size={12} /> Preview
@@ -230,6 +239,7 @@ export default function SlidesDashboard() {
           </div>
         </div>
 
+        {/* Recent Presentations */}
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
@@ -263,7 +273,7 @@ export default function SlidesDashboard() {
               {recentPresentations.map((pres, idx) => {
                 const slideCount = pres.slides_data?.[0]?.slides?.length || 0
                 const templateId = pres.slides_data?.[0]?.template_id || 'modern'
-                const template = SLIDE_TEMPLATES[templateId as keyof typeof SLIDE_TEMPLATES] || SLIDE_TEMPLATES.modern
+                const template = SLIDE_TEMPLATES[templateId as TemplateId] || SLIDE_TEMPLATES.modern
                 return (
                   <motion.div
                     key={pres.id}
@@ -302,133 +312,6 @@ export default function SlidesDashboard() {
           )}
         </div>
       </div>
-
-      {/* ===== 🎨 TEMPLATE PREVIEW MODAL ===== */}
-      <AnimatePresence>
-        {previewTemplate && (
-          <motion.div
-            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setPreviewTemplate(null)}
-          >
-            <motion.div
-              className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              transition={{ duration: 0.3 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl">{previewTemplate.icon}</span>
-                  <div>
-                    <h2 className="text-xl font-bold text-gray-800">{previewTemplate.name}</h2>
-                    <p className="text-sm text-gray-400">{previewTemplate.description}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setPreviewTemplate(null)}
-                  className="p-2 rounded-full hover:bg-gray-100 transition"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              {/* Slide Preview (Live Demo) */}
-              <div className="p-6">
-                <div
-                  className="rounded-2xl shadow-lg border relative min-h-[300px] p-8 overflow-hidden"
-                  style={{ backgroundColor: `#${previewTemplate.styles.colors.bg}` }}
-                >
-                  {/* Accent Bar (Left) */}
-                  {previewTemplate.styles.contentSlide.accentPosition === 'left' && (
-                    <div
-                      className="absolute left-0 top-0 w-2 h-full rounded-l-2xl"
-                      style={{ backgroundColor: `#${previewTemplate.styles.colors.accent}` }}
-                    />
-                  )}
-                  {/* Top Accent Bar */}
-                  {previewTemplate.styles.contentSlide.accentPosition === 'top' && (
-                    <div
-                      className="absolute top-0 left-0 w-full h-1.5"
-                      style={{ backgroundColor: `#${previewTemplate.styles.colors.primary}` }}
-                    />
-                  )}
-
-                  {/* Slide Content */}
-                  <div className={previewTemplate.styles.contentSlide.accentPosition === 'left' ? 'ml-6' : ''}>
-                    <h3
-                      className="text-2xl md:text-3xl font-bold mb-4"
-                      style={{ color: `#${previewTemplate.styles.colors.title}` }}
-                    >
-                      Sample Presentation Title
-                    </h3>
-                    <ul
-                      className="space-y-2 text-base"
-                      style={{ color: `#${previewTemplate.styles.colors.text}` }}
-                    >
-                      <li>• This is a sample bullet point</li>
-                      <li>• Demonstrates the visual style</li>
-                      <li>• Shows colors and spacing</li>
-                      <li>• Try different templates to compare</li>
-                    </ul>
-                    {/* Bottom Decoration */}
-                    {previewTemplate.styles.titleSlide.decoration === 'bar' && (
-                      <div
-                        className="absolute bottom-6 left-1/2 transform -translate-x-1/2 w-2/3 h-1 rounded-full"
-                        style={{ backgroundColor: `#${previewTemplate.styles.colors.accent}` }}
-                      />
-                    )}
-                  </div>
-                  {/* Slide Number Mock */}
-                  <div className="absolute bottom-6 right-6 text-xs opacity-30" style={{ color: `#${previewTemplate.styles.colors.text}` }}>
-                    1 / 10
-                  </div>
-                </div>
-
-                {/* Template Details & Actions */}
-                <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="text-gray-400 text-xs">Accent Style</p>
-                    <p className="font-medium text-gray-700 capitalize">
-                      {previewTemplate.styles.contentSlide.accentPosition || 'None'}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="text-gray-400 text-xs">Bullet Style</p>
-                    <p className="font-medium text-gray-700 capitalize">
-                      {previewTemplate.styles.contentSlide.bulletStyle}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="text-gray-400 text-xs">Title Alignment</p>
-                    <p className="font-medium text-gray-700 capitalize">
-                      {previewTemplate.styles.titleSlide.alignment}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="text-gray-400 text-xs">Decoration</p>
-                    <p className="font-medium text-gray-700 capitalize">
-                      {previewTemplate.styles.titleSlide.decoration || 'None'}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => handleCreateWithTemplate(previewTemplate.id)}
-                  className="mt-6 w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3.5 rounded-xl font-semibold hover:shadow-lg transition flex items-center justify-center gap-2"
-                >
-                  <Plus size={18} /> Use "{previewTemplate.name}" Template
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   )
 }
