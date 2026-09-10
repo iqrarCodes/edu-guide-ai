@@ -31,19 +31,25 @@ export async function POST(request: NextRequest) {
         const parser = new XMLParser({ ignoreAttributes: false })
         const builder = new XMLBuilder({ format: true, ignoreAttributes: false })
 
-        // ✅ Get master slide using zip.file()
-        const slideFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/slides/slide') && f.endsWith('.xml'))
+        // Get master slide
+        const slideFiles = Object.keys(zip.files).filter(
+            f => f.startsWith('ppt/slides/slide') && f.endsWith('.xml')
+        )
         slideFiles.sort()
 
         if (slideFiles.length === 0) {
             return NextResponse.json({ error: 'No slides found in template' }, { status: 400 })
         }
 
-        const masterSlideFile = zip.file(slideFiles[0])   // ✅ Use zip.file()
+        // ✅ FIX: Null check + type assertion
+        const masterSlideFile = zip.file(slideFiles[0]) as any
+        if (!masterSlideFile) {
+            return NextResponse.json({ error: 'Master slide not found' }, { status: 404 })
+        }
         const masterSlideContent = await masterSlideFile.async('text')
         const masterSlideObj = parser.parse(masterSlideContent)
 
-        // Clone slides
+        // Clone slides for each slide data
         const slideXmls: string[] = []
         for (const data of slides) {
             const clone = JSON.parse(JSON.stringify(masterSlideObj))
@@ -63,8 +69,11 @@ export async function POST(request: NextRequest) {
             zip.file(`ppt/slides/slide${i + 1}.xml`, slideXmls[i])
         }
 
-        // ✅ Update presentation.xml using zip.file()
-        const presFile = zip.file('ppt/presentation.xml')
+        // ✅ FIX: Null check + type assertion for presentation.xml
+        const presFile = zip.file('ppt/presentation.xml') as any
+        if (!presFile) {
+            return NextResponse.json({ error: 'presentation.xml not found' }, { status: 404 })
+        }
         const presContent = await presFile.async('text')
         const presObj = parser.parse(presContent)
 
@@ -90,7 +99,10 @@ export async function POST(request: NextRequest) {
         })
     } catch (error: any) {
         console.error('Template export error:', error)
-        return NextResponse.json({ error: error.message || 'Failed to generate presentation' }, { status: 500 })
+        return NextResponse.json(
+            { error: error.message || 'Failed to generate presentation' },
+            { status: 500 }
+        )
     }
 }
 
