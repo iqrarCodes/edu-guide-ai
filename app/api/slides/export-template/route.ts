@@ -1,27 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import PizZip from 'pizzip'
-import path from 'path'
-import fs from 'fs'
-
-// Helper: read zip file content as string
-async function readZipText(zip: PizZip, filePath: string): Promise<string> {
-    const f = zip.file(filePath) as any
-    if (!f) throw new Error(`File not found in zip: ${filePath}`)
-    if (typeof f.asText === 'function') return f.asText()
-    if (typeof f.async === 'function') return await f.async('text')
-    throw new Error(`Cannot read file: ${filePath}`)
-}
-
-// Escape XML special characters
-function escapeXml(text: string): string {
-    return String(text)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;')
-}
+import PptxGenJS from 'pptxgenjs'
+import { SLIDE_TEMPLATES, TemplateId } from '@/lib/slide-templates'
 
 export async function POST(request: NextRequest) {
     const supabase = await createClient()
@@ -37,147 +17,286 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Template, slides, and title required' }, { status: 400 })
     }
 
-    const templatePath = path.join(process.cwd(), 'public', 'templates', `${templateId}.pptx`)
-    if (!fs.existsSync(templatePath)) {
-        return NextResponse.json({ error: 'Template not found' }, { status: 404 })
-    }
+    const template = SLIDE_TEMPLATES[templateId as TemplateId] || SLIDE_TEMPLATES.modern
 
     try {
-        const templateBuffer = fs.readFileSync(templatePath)
-        const zip = new PizZip(templateBuffer)
-
-        // ---- 1. Find master slide files ----
-        const existingSlideFiles = Object.keys(zip.files)
-            .filter(f => /^ppt\/slides\/slide\d+\.xml$/.test(f))
-            .sort()
-
-        if (existingSlideFiles.length === 0) {
-            return NextResponse.json({ error: 'No slides in template' }, { status: 400 })
-        }
-
-        const existingRelsFiles = Object.keys(zip.files)
-            .filter(f => /^ppt\/slides\/_rels\/slide\d+\.xml\.rels$/.test(f))
-            .sort()
-
-        // ---- 2. Read master slide XML and its rels file ----
-        const masterSlideXml = await readZipText(zip, existingSlideFiles[0])
-        const masterRels = existingRelsFiles.length > 0
-            ? await readZipText(zip, existingRelsFiles[0])
-            : null
-
-        // ---- 3. Remove all existing slides and rels ----
-        existingSlideFiles.forEach(f => zip.remove(f))
-        existingRelsFiles.forEach(f => zip.remove(f))
-
-        // ---- 4. Create new slides (one per data item) ----
-        for (let i = 0; i < slides.length; i++) {
-            const data = slides[i]
-            const slideNum = i + 1
-
-            let xml = masterSlideXml
-
-            // Replace {title}
-            const titleText = escapeXml(data.title || 'Untitled')
-            xml = xml.split('{title}').join(titleText)
-
-            // Replace {bullets} – needs proper <a:p> paragraph structure
-            const bulletsList = (data.bullets || ['No content']).map((b: string) => escapeXml(b))
-            if (bulletsList.length === 1) {
-                xml = xml.split('{bullets}').join(bulletsList[0])
-            } else {
-                // For multiple bullets: close current paragraph, open new ones
-                const bulletXml = bulletsList
-                    .map((b, idx) => {
-                        if (idx === 0) return b
-                        return `</a:t></a:r></a:p><a:p><a:r><a:t>${b}`
-                    })
-                    .join('')
-                xml = xml.split('{bullets}').join(bulletXml)
-            }
-
-            zip.file(`ppt/slides/slide${slideNum}.xml`, xml)
-
-            // ✅ CRITICAL: Copy the rels file for this slide
-            if (masterRels) {
-                zip.file(`ppt/slides/_rels/slide${slideNum}.xml.rels`, masterRels)
-            }
-        }
-
-        // ---- 5. Update [Content_Types].xml ----
-        let ct = await readZipText(zip, '[Content_Types].xml')
-        // Remove old slide overrides
-        ct = ct.replace(/<Override[^>]*PartName="\/ppt\/slides\/slide\d+\.xml"[^>]*\/>/g, '')
-        // Add new slide overrides
-        const slideOverrides = slides
-            .map((_: any, i: number) =>
-                `<Override PartName="/ppt/slides/slide${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`
-            )
-            .join('')
-        ct = ct.replace('</Types>', slideOverrides + '</Types>')
-        zip.file('[Content_Types].xml', ct)
-
-        // ---- 6. Update presentation.xml.rels ----
-        const presRelsPath = 'ppt/_rels/presentation.xml.rels'
-        let presRels = await readZipText(zip, presRelsPath)
-
-        // Remove existing slide relationships (keep slideMaster, etc.)
-        presRels = presRels.replace(
-            /<Relationship[^>]*Type="http:\/\/schemas\.openxmlformats\.org\/officeDocument\/2006\/relationships\/slide"[^>]*\/>/g,
-            ''
-        )
-
-        // Find max existing rId to avoid conflicts
-        const rIdMatches = presRels.match(/Id="rId(\d+)"/g) || []
-        const maxRId = rIdMatches.reduce((max: number, r: string) => {
-            const n = parseInt(r.replace(/Id="rId(\d+)"/, '$1'))
-            return n > max ? n : max
-        }, 0)
-
-        // Add new slide relationships
-        const slideRels = slides
-            .map((_: any, i: number) =>
-                `<Relationship Id="rId${maxRId + i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${i + 1}.xml"/>`
-            )
-            .join('')
-        presRels = presRels.replace('</Relationships>', slideRels + '</Relationships>')
-        zip.file(presRelsPath, presRels)
-
-        // ---- 7. Update presentation.xml sldIdLst ----
-        let presXml = await readZipText(zip, 'ppt/presentation.xml')
-
-        const sldIdEntries = slides
-            .map((_: any, i: number) =>
-                `<p:sldId id="${256 + i}" r:id="rId${maxRId + i + 1}"/>`
-            )
-            .join('')
-
-        if (presXml.match(/<p:sldIdLst>[\s\S]*?<\/p:sldIdLst>/)) {
-            presXml = presXml.replace(
-                /<p:sldIdLst>[\s\S]*?<\/p:sldIdLst>/,
-                `<p:sldIdLst>${sldIdEntries}</p:sldIdLst>`
-            )
-        } else {
-            presXml = presXml.replace(
-                /(<p:presentation[^>]*>)/,
-                `$1<p:sldIdLst>${sldIdEntries}</p:sldIdLst>`
-            )
-        }
-        zip.file('ppt/presentation.xml', presXml)
-
-        // ---- 8. Generate output ----
-        const outputBuffer = zip.generate({ type: 'nodebuffer' }) as Buffer
-
-        return new NextResponse(new Uint8Array(outputBuffer), {
+        const buffer = await generateDesignerPPTX(slides, title, template)
+        return new NextResponse(new Uint8Array(buffer), {
             headers: {
                 'Content-Type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
                 'Content-Disposition': `attachment; filename="${title.replace(/\s+/g, '_')}.pptx"`,
             },
         })
     } catch (error: any) {
-        console.error('Template export error:', error)
-        return NextResponse.json(
-            { error: error.message || 'Failed to generate presentation' },
-            { status: 500 }
-        )
+        console.error('Export error:', error)
+        return NextResponse.json({ error: error.message || 'Failed' }, { status: 500 })
     }
+}
+
+// ============================================================
+// DESIGNER PPTX GENERATOR (Multi-Color, Shapes, Images)
+// ============================================================
+async function generateDesignerPPTX(slides: any[], title: string, template: any): Promise<Buffer> {
+    const colors = template.styles.colors
+    const styles = template.styles
+    const pptx = new PptxGenJS()
+    pptx.defineLayout({ name: 'WIDE', width: 13.33, height: 7.5 })
+    pptx.layout = 'WIDE'
+
+    const clean = (text: string): string => {
+        if (!text) return ''
+        return text
+            .replace(/[\x00-\x1F\x7F]/g, '')
+            .replace(/💡/g, '')
+            .replace(/[✅✔]/g, '✓')
+            .replace(/▶/g, '▸')
+            .trim()
+    }
+
+    // ============================================================
+    // TITLE SLIDE
+    // ============================================================
+    const titleSlide = pptx.addSlide()
+    titleSlide.background = { color: colors.bg }
+
+    if (styles.titleSlide.decoration === 'bar') {
+        // Top colored banner
+        titleSlide.addShape(pptx.ShapeType.rect, {
+            x: 0, y: 0, w: 13.33, h: 3,
+            fill: { color: colors.accent },
+        })
+        // Decorative circle overlapping banner
+        titleSlide.addShape(pptx.ShapeType.ellipse, {
+            x: 10, y: 1.5, w: 3, h: 3,
+            fill: { color: colors.secondary, transparency: 60 },
+            line: { color: colors.secondary, transparency: 60 },
+        })
+        // Title text
+        titleSlide.addText(clean(title), {
+            x: 0.5, y: 0.7, w: 12, h: 1.8,
+            fontSize: 44, color: 'FFFFFF', bold: true,
+            align: 'center', valign: 'middle', fontFace: 'Arial',
+        })
+        // Subtitle
+        titleSlide.addText('Generated by EduGuide AI+', {
+            x: 0.5, y: 3.5, w: 12.33, h: 1,
+            fontSize: 20, color: colors.text,
+            align: 'center', fontFace: 'Arial',
+        })
+        // Bottom decorative bar
+        titleSlide.addShape(pptx.ShapeType.rect, {
+            x: 5, y: 5.3, w: 3.33, h: 0.1,
+            fill: { color: colors.accent },
+        })
+    } else if (styles.titleSlide.decoration === 'circle') {
+        // Big circles in background
+        titleSlide.addShape(pptx.ShapeType.ellipse, {
+            x: -1.5, y: -1.5, w: 6, h: 6,
+            fill: { color: colors.accent, transparency: 75 },
+            line: { color: colors.accent, transparency: 75 },
+        })
+        titleSlide.addShape(pptx.ShapeType.ellipse, {
+            x: 9.5, y: 3.5, w: 5, h: 5,
+            fill: { color: colors.secondary, transparency: 75 },
+            line: { color: colors.secondary, transparency: 75 },
+        })
+        // Center title
+        titleSlide.addText(clean(title), {
+            x: 0.5, y: 2.5, w: 12.33, h: 2,
+            fontSize: 48, color: colors.text, bold: true,
+            align: 'center', valign: 'middle', fontFace: 'Arial',
+        })
+        titleSlide.addText('Generated by EduGuide AI+', {
+            x: 0.5, y: 4.8, w: 12.33, h: 0.8,
+            fontSize: 20, color: colors.text,
+            align: 'center', fontFace: 'Arial',
+        })
+    } else {
+        // Clean academic style
+        titleSlide.addText(clean(title), {
+            x: 1, y: 2, w: 11.33, h: 2,
+            fontSize: 44, color: colors.text, bold: true,
+            align: 'left', valign: 'middle', fontFace: 'Arial',
+        })
+        titleSlide.addText('Generated by EduGuide AI+', {
+            x: 1, y: 4.2, w: 11.33, h: 0.8,
+            fontSize: 18, color: colors.primary,
+            align: 'left', fontFace: 'Arial',
+        })
+        // Left accent line
+        titleSlide.addShape(pptx.ShapeType.rect, {
+            x: 1, y: 5.2, w: 3, h: 0.06,
+            fill: { color: colors.accent },
+        })
+    }
+
+    // ============================================================
+    // CONTENT SLIDES (with images support)
+    // ============================================================
+    slides.forEach((slide: any, idx: number) => {
+        const s = pptx.addSlide()
+        s.background = { color: colors.bg }
+
+        const hasImage = !!slide.image
+
+        // --- Left or Top accent bar ---
+        if (styles.contentSlide.accentPosition === 'left') {
+            s.addShape(pptx.ShapeType.rect, {
+                x: 0, y: 0, w: 0.25, h: 7.5,
+                fill: { color: colors.accent },
+            })
+        } else if (styles.contentSlide.accentPosition === 'top') {
+            s.addShape(pptx.ShapeType.rect, {
+                x: 0, y: 0, w: 13.33, h: 0.4,
+                fill: { color: colors.accent },
+            })
+        }
+
+        // --- Slide number badge ---
+        if (styles.contentSlide.accentPosition === 'left') {
+            s.addShape(pptx.ShapeType.rect, {
+                x: 0.5, y: 0.5, w: 0.9, h: 0.6,
+                fill: { color: colors.accent },
+                rectRadius: 4,
+            })
+            s.addText(String(idx + 1).padStart(2, '0'), {
+                x: 0.5, y: 0.5, w: 0.9, h: 0.6,
+                fontSize: 18, color: 'FFFFFF', bold: true,
+                align: 'center', valign: 'middle', fontFace: 'Arial',
+            })
+        }
+
+        // --- Title ---
+        const titleX = styles.contentSlide.accentPosition === 'left' ? 1.7 : 0.5
+        const titleY = styles.contentSlide.accentPosition === 'top' ? 0.7 : 0.5
+
+        s.addText(clean(slide.title || `Slide ${idx + 1}`), {
+            x: titleX, y: titleY, w: 11, h: 0.9,
+            fontSize: 28, color: colors.text, bold: true,
+            fontFace: 'Arial', valign: 'middle',
+        })
+
+        // Accent underline
+        s.addShape(pptx.ShapeType.rect, {
+            x: titleX, y: titleY + 0.9, w: 1.8, h: 0.06,
+            fill: { color: colors.accent },
+        })
+
+        // --- Content Area (split if image exists) ---
+        const contentWidth = hasImage ? 6.2 : 11
+        const contentX = titleX
+
+        // --- Image (right side) ---
+        if (hasImage) {
+            try {
+                s.addImage({
+                    data: slide.image,
+                    x: 7.5, y: 2.2, w: 5.3, h: 4,
+                    sizing: { type: 'contain', w: 5.3, h: 4 },
+                })
+                // Decorative frame behind image
+                s.addShape(pptx.ShapeType.rect, {
+                    x: 7.4, y: 2.1, w: 5.5, h: 4.2,
+                    fill: { color: colors.accent, transparency: 90 },
+                    line: { color: colors.accent, width: 1 },
+                    rectRadius: 8,
+                })
+            } catch (e) {
+                console.warn('Image render failed:', e)
+            }
+        }
+
+        // --- Bullets ---
+        const bullets = slide.bullets || ['No content']
+        const bulletStyle = styles.contentSlide.bulletStyle
+        let prefixChar = '• '
+        if (bulletStyle === 'arrow') prefixChar = '▸ '
+        else if (bulletStyle === 'check') prefixChar = '✓ '
+
+        let yPos = 2.2
+        bullets.forEach((bullet: string, i: number) => {
+            if (i > 7) return
+
+            const prefix = bulletStyle === 'number' ? `${i + 1}. ` : prefixChar
+            const textWidth = contentWidth - 0.5
+
+            if (bulletStyle === 'arrow' || bulletStyle === 'check') {
+                s.addText(prefix.trim(), {
+                    x: contentX, y: yPos, w: 0.4, h: 0.55,
+                    fontSize: 16, color: colors.accent, bold: true,
+                    valign: 'middle', fontFace: 'Arial',
+                })
+                s.addText(clean(bullet), {
+                    x: contentX + 0.4, y: yPos, w: textWidth, h: 0.55,
+                    fontSize: 15, color: colors.text,
+                    valign: 'middle', fontFace: 'Arial',
+                    align: styles.contentSlide.alignment,
+                })
+            } else {
+                s.addText(`${prefix}${clean(bullet)}`, {
+                    x: contentX, y: yPos, w: contentWidth, h: 0.55,
+                    fontSize: 15, color: colors.text,
+                    valign: 'middle', fontFace: 'Arial',
+                    align: styles.contentSlide.alignment,
+                })
+            }
+            yPos += 0.65
+        })
+
+        // --- Key Takeaway ---
+        if (slide.key_takeaway) {
+            const takeawayY = Math.min(yPos + 0.3, 6.3)
+            const takeawayWidth = hasImage ? 6.2 : 12.33
+            s.addShape(pptx.ShapeType.rect, {
+                x: contentX, y: takeawayY, w: takeawayWidth, h: 0.7,
+                fill: { color: colors.accent, transparency: 88 },
+                line: { color: colors.accent, width: 0.5 },
+                rectRadius: 4,
+            })
+            s.addText(`💡  ${clean(slide.key_takeaway)}`, {
+                x: contentX + 0.2, y: takeawayY, w: takeawayWidth - 0.4, h: 0.7,
+                fontSize: 12, color: colors.text, italic: true,
+                valign: 'middle', fontFace: 'Arial',
+            })
+        }
+
+        // --- Slide number (bottom right) ---
+        s.addText(`${idx + 1} / ${slides.length}`, {
+            x: 11.5, y: 7, w: 1.5, h: 0.4,
+            fontSize: 11, color: '#9CA3AF',
+            align: 'right', fontFace: 'Arial',
+        })
+    })
+
+    // ============================================================
+    // END SLIDE
+    // ============================================================
+    const endSlide = pptx.addSlide()
+    endSlide.background = { color: colors.accent }
+
+    // Decorative circles
+    endSlide.addShape(pptx.ShapeType.ellipse, {
+        x: -1, y: -1, w: 5, h: 5,
+        fill: { color: 'FFFFFF', transparency: 85 },
+        line: { color: 'FFFFFF', transparency: 85 },
+    })
+    endSlide.addShape(pptx.ShapeType.ellipse, {
+        x: 10, y: 4, w: 4, h: 4,
+        fill: { color: 'FFFFFF', transparency: 85 },
+        line: { color: 'FFFFFF', transparency: 85 },
+    })
+
+    endSlide.addText('Thank You', {
+        x: 0.5, y: 2.5, w: 12.33, h: 1.5,
+        fontSize: 54, color: 'FFFFFF', bold: true,
+        align: 'center', valign: 'middle', fontFace: 'Arial',
+    })
+    endSlide.addText('Presented by EduGuide AI+', {
+        x: 0.5, y: 4.5, w: 12.33, h: 0.8,
+        fontSize: 20, color: 'FFFFFF',
+        align: 'center', fontFace: 'Arial',
+    })
+
+    const buffer = await pptx.write({ outputType: 'nodebuffer' })
+    return buffer as Buffer
 }

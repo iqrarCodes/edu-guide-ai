@@ -36,26 +36,19 @@ export default function SlidesDashboard() {
       const { data, error } = await supabase
         .from('projects')
         .select(`
-              id,
-              name,
-              created_at,
-              updated_at,
-              slides_data (id, slides, status, template_id)
-            `)
+                    id, name, created_at, updated_at,
+                    slides_data (id, slides, status, template_id)
+                `)
         .eq('type', 'slides')
         .order('updated_at', { ascending: false })
 
-      if (!error && data) {
-        setPresentations(data)
-      }
+      if (!error && data) setPresentations(data)
       setLoading(false)
     }
     fetchData()
   }, [])
 
-  const handleLoadPresentation = (id: string) => {
-    router.push(`/slides/${id}`)
-  }
+  const handleLoadPresentation = (id: string) => router.push(`/slides/${id}`)
 
   const handleCreateWithTemplate = (templateId: string) => {
     setPreviewTemplate(null)
@@ -63,24 +56,9 @@ export default function SlidesDashboard() {
   }
 
   const quickActions = [
-    {
-      icon: <Plus size={20} />,
-      label: 'New Presentation',
-      action: () => router.push('/slides'),
-      color: 'from-purple-500 to-indigo-500',
-    },
-    {
-      icon: <LayoutTemplate size={20} />,
-      label: 'Browse Templates',
-      action: () => templatesRef.current?.scrollIntoView({ behavior: 'smooth' }),
-      color: 'from-blue-500 to-cyan-500',
-    },
-    {
-      icon: <Download size={20} />,
-      label: 'Export All',
-      action: () => alert('📦 Export all as ZIP coming soon!'),
-      color: 'from-green-500 to-emerald-500',
-    },
+    { icon: <Plus size={20} />, label: 'New Presentation', action: () => router.push('/slides'), color: 'from-purple-500 to-indigo-500' },
+    { icon: <LayoutTemplate size={20} />, label: 'Browse Templates', action: () => templatesRef.current?.scrollIntoView({ behavior: 'smooth' }), color: 'from-blue-500 to-cyan-500' },
+    { icon: <Download size={20} />, label: 'Export All', action: () => alert('📦 Export all as ZIP coming soon!'), color: 'from-green-500 to-emerald-500' },
   ]
 
   if (loading) {
@@ -98,30 +76,20 @@ export default function SlidesDashboard() {
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-              <Sparkles className="w-8 h-8 text-purple-600" />
-              Slides Dashboard
+              <Sparkles className="w-8 h-8 text-purple-600" /> Slides Dashboard
             </h1>
             <p className="text-gray-500 text-sm">Manage all your AI-generated presentations</p>
           </div>
-          <button
-            onClick={() => router.push('/slides')}
-            className="mt-4 md:mt-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-2xl font-medium hover:shadow-lg transition flex items-center gap-2"
-          >
+          <button onClick={() => router.push('/slides')} className="mt-4 md:mt-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-2xl font-medium hover:shadow-lg transition flex items-center gap-2">
             <Plus size={18} /> New Presentation
           </button>
         </div>
 
         {/* Welcome */}
-        <motion.div
-          className="mb-8"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
+        <motion.div className="mb-8" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <h2 className="text-2xl font-bold text-gray-800">
             Welcome back, <span className="text-purple-600">{userName}</span>! 👋
           </h2>
-          <p className="text-gray-500 text-sm mt-1">Here's an overview of your presentations.</p>
         </motion.div>
 
         {/* Stats */}
@@ -132,13 +100,7 @@ export default function SlidesDashboard() {
             { label: 'Avg Rating', value: '4.9', icon: Star, color: 'from-yellow-500 to-orange-500', delay: 0.2 },
             { label: 'Templates', value: Object.keys(SLIDE_TEMPLATES).length, icon: LayoutTemplate, color: 'from-green-500 to-emerald-500', delay: 0.3 },
           ].map((stat, idx) => (
-            <motion.div
-              key={idx}
-              className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 shadow-sm border border-white/30 hover:shadow-xl transition"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: stat.delay }}
-            >
+            <motion.div key={idx} className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 shadow-sm border border-white/30 hover:shadow-xl transition" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: stat.delay }}>
               <div className={`bg-gradient-to-r ${stat.color} w-10 h-10 rounded-xl flex items-center justify-center mb-3`}>
                 <stat.icon size={20} className="text-white" />
               </div>
@@ -153,16 +115,7 @@ export default function SlidesDashboard() {
           <h3 className="text-lg font-bold text-gray-800 mb-4">⚡ Quick Actions</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {quickActions.map((action, idx) => (
-              <motion.button
-                key={idx}
-                onClick={action.action}
-                className={`bg-gradient-to-r ${action.color} text-white p-5 rounded-2xl shadow-sm hover:shadow-lg transition flex items-center gap-3 group`}
-                whileHover={{ y: -4 }}
-                whileTap={{ scale: 0.97 }}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3, delay: idx * 0.1 }}
-              >
+              <motion.button key={idx} onClick={action.action} className={`bg-gradient-to-r ${action.color} text-white p-5 rounded-2xl shadow-sm hover:shadow-lg transition flex items-center gap-3 group`} whileHover={{ y: -4 }} whileTap={{ scale: 0.97 }}>
                 <div className="bg-white/20 p-2 rounded-xl">{action.icon}</div>
                 <span className="font-medium">{action.label}</span>
                 <ArrowRight size={16} className="ml-auto opacity-0 group-hover:opacity-100 transition" />
@@ -171,71 +124,83 @@ export default function SlidesDashboard() {
           </div>
         </div>
 
-        {/* ===== 🎨 TEMPLATES GALLERY (WITH THUMBNAILS) ===== */}
+        {/* ===== TEMPLATES GALLERY (16 Templates) ===== */}
         <div ref={templatesRef} className="mb-8 scroll-mt-20">
           <h3 className="text-lg font-bold text-gray-800 mb-4">🎨 Available Templates</h3>
           <p className="text-gray-400 text-sm mb-4">
-            Click on any template to see full preview and use it.
+            Click "Preview" to see the design, or "Use" to create a presentation.
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Object.values(SLIDE_TEMPLATES).map((template) => (
-              <motion.div
-                key={template.id}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 shadow-sm border border-white/30 hover:shadow-xl transition cursor-pointer hover:-translate-y-1 group"
-                whileHover={{ y: -6 }}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.1 * (Object.values(SLIDE_TEMPLATES).indexOf(template) + 1) }}
-              >
-                {/* ✅ THUMBNAIL IMAGE */}
-                <div className="relative w-full aspect-video rounded-xl overflow-hidden mb-3 bg-gray-100">
-                  <img
-                    src={`/templates/thumbnails/${template.id}.png`}
-                    alt={template.name}
-                    className="w-full h-full object-cover transition group-hover:scale-105"
-                    onError={(e) => {
-                      // Fallback: agar thumbnail na ho toh CSS mockup dikhao
-                      const target = e.target as HTMLImageElement
-                      target.style.display = 'none'
-                      target.parentElement!.innerHTML = `
-                        <div class="w-full h-full flex flex-col items-center justify-center text-xs font-medium" 
-                             style="background-color: #${template.styles.colors.bg}; color: #${template.styles.colors.text};">
-                          <span>${template.icon} ${template.name}</span>
-                          <span class="text-[10px] opacity-60 mt-1">No thumbnail</span>
-                        </div>
-                      `
-                    }}
-                  />
-                  {/* Overlay on hover */}
-                  <div className="absolute inset-0 bg-purple-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                    <Eye className="w-6 h-6 text-white" />
+            {Object.values(SLIDE_TEMPLATES).map((template) => {
+              const c = template.styles.colors
+              const s = template.styles
+              return (
+                <motion.div
+                  key={template.id}
+                  className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 shadow-sm border border-white/30 hover:shadow-xl transition cursor-pointer hover:-translate-y-1 group"
+                  whileHover={{ y: -6 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.05 * (Object.values(SLIDE_TEMPLATES).indexOf(template) + 1) }}
+                >
+                  {/* ✅ CSS MOCKUP PREVIEW (Always shows real design colors) */}
+                  <div
+                    className="relative h-24 rounded-xl overflow-hidden mb-3"
+                    style={{ backgroundColor: `#${c.bg}` }}
+                  >
+                    {/* Top banner if decoration = bar */}
+                    {s.titleSlide.decoration === 'bar' && (
+                      <div className="absolute top-0 left-0 right-0 h-8" style={{ backgroundColor: `#${c.accent}` }} />
+                    )}
+                    {/* Circle decoration */}
+                    {s.titleSlide.decoration === 'circle' && (
+                      <>
+                        <div className="absolute -top-2 -left-2 w-10 h-10 rounded-full" style={{ backgroundColor: `#${c.accent}`, opacity: 0.4 }} />
+                        <div className="absolute bottom-1 right-1 w-8 h-8 rounded-full" style={{ backgroundColor: `#${c.secondary}`, opacity: 0.4 }} />
+                      </>
+                    )}
+                    {/* Left accent bar */}
+                    {s.contentSlide.accentPosition === 'left' && (
+                      <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: `#${c.accent}` }} />
+                    )}
+                    {/* Top accent bar */}
+                    {s.contentSlide.accentPosition === 'top' && (
+                      <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: `#${c.accent}` }} />
+                    )}
+                    {/* Sample title */}
+                    <div className="absolute bottom-2 left-3 right-3">
+                      <p className="text-xs font-bold truncate" style={{ color: `#${c.text}` }}>
+                        {template.icon} {template.name}
+                      </p>
+                      <div className="h-0.5 w-8 mt-1 rounded-full" style={{ backgroundColor: `#${c.accent}` }} />
+                    </div>
                   </div>
-                </div>
 
-                <p className="font-semibold text-gray-800 text-sm">{template.name}</p>
-                <p className="text-xs text-gray-400 line-clamp-1">{template.description}</p>
-                <div className="flex items-center gap-2 mt-3">
-                  <button
-                    className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-600 text-xs font-medium py-1.5 rounded-xl transition flex items-center justify-center gap-1"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setPreviewTemplate(template)
-                    }}
-                  >
-                    <Eye size={12} /> Preview
-                  </button>
-                  <button
-                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium py-1.5 rounded-xl transition"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleCreateWithTemplate(template.id)
-                    }}
-                  >
-                    Use
-                  </button>
-                </div>
-              </motion.div>
-            ))}
+                  <p className="font-semibold text-gray-800 text-sm truncate">{template.name}</p>
+                  <p className="text-xs text-gray-400 line-clamp-1">{template.description}</p>
+                  <div className="flex items-center gap-2 mt-3">
+                    <button
+                      className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-600 text-xs font-medium py-1.5 rounded-xl transition flex items-center justify-center gap-1"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setPreviewTemplate(template)
+                      }}
+                    >
+                      <Eye size={12} /> Preview
+                    </button>
+                    <button
+                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium py-1.5 rounded-xl transition"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleCreateWithTemplate(template.id)
+                      }}
+                    >
+                      Use
+                    </button>
+                  </div>
+                </motion.div>
+              )
+            })}
           </div>
         </div>
 
@@ -243,14 +208,10 @@ export default function SlidesDashboard() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-              <Clock size={18} className="text-purple-500" />
-              Recent Presentations
+              <Clock size={18} className="text-purple-500" /> Recent Presentations
             </h3>
             {presentations.length > 4 && (
-              <button
-                onClick={() => router.push('/slides')}
-                className="text-sm text-purple-600 hover:text-purple-700 font-medium"
-              >
+              <button onClick={() => router.push('/slides')} className="text-sm text-purple-600 hover:text-purple-700 font-medium">
                 View All
               </button>
             )}
@@ -260,11 +221,7 @@ export default function SlidesDashboard() {
             <div className="text-center py-16 bg-white/60 backdrop-blur-sm rounded-3xl border border-dashed border-gray-300">
               <div className="text-6xl mb-4">📊</div>
               <p className="text-xl font-medium text-gray-500">No presentations yet</p>
-              <p className="text-gray-400 text-sm mt-1">Create your first AI-powered presentation</p>
-              <button
-                onClick={() => router.push('/slides')}
-                className="mt-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-2.5 rounded-xl font-medium hover:shadow-lg transition"
-              >
+              <button onClick={() => router.push('/slides')} className="mt-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-2.5 rounded-xl font-medium hover:shadow-lg transition">
                 + New Presentation
               </button>
             </div>
@@ -277,31 +234,20 @@ export default function SlidesDashboard() {
                 return (
                   <motion.div
                     key={pres.id}
-                    className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 shadow-sm border border-white/30 hover:shadow-xl transition cursor-pointer group"
+                    className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 shadow-sm border border-white/30 hover:shadow-xl transition cursor-pointer"
                     whileHover={{ y: -6 }}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: idx * 0.1 }}
                     onClick={() => handleLoadPresentation(pres.id)}
                   >
                     <div className="flex items-start justify-between">
                       <div>
-                        <h4 className="font-bold text-gray-800">{pres.name}</h4>
+                        <h4 className="font-bold text-gray-800 truncate">{pres.name}</h4>
                         <p className="text-xs text-gray-400 mt-1">{slideCount} slides</p>
                       </div>
                       <span className="text-2xl">{template.icon}</span>
                     </div>
                     <div className="flex items-center justify-between mt-4">
-                      <span className="text-xs text-gray-400">
-                        {new Date(pres.updated_at).toLocaleDateString()}
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleLoadPresentation(pres.id)
-                        }}
-                        className="text-sm bg-purple-50 hover:bg-purple-100 text-purple-600 px-3 py-1.5 rounded-xl font-medium transition"
-                      >
+                      <span className="text-xs text-gray-400">{new Date(pres.updated_at).toLocaleDateString()}</span>
+                      <button onClick={(e) => { e.stopPropagation(); handleLoadPresentation(pres.id) }} className="text-sm bg-purple-50 hover:bg-purple-100 text-purple-600 px-3 py-1.5 rounded-xl font-medium transition">
                         Open
                       </button>
                     </div>
@@ -313,25 +259,21 @@ export default function SlidesDashboard() {
         </div>
       </div>
 
-      {/* ===== PREVIEW MODAL (WITH THUMBNAIL) ===== */}
+      {/* ===== FULL PREVIEW MODAL (Large CSS Mockup) ===== */}
       <AnimatePresence>
         {previewTemplate && (
           <motion.div
             className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setPreviewTemplate(null)}
           >
             <motion.div
               className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
+              initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
+              <div className="flex items-center justify-between p-6 border-b border-gray-100">
                 <div className="flex items-center gap-3">
                   <span className="text-3xl">{previewTemplate.icon}</span>
                   <div>
@@ -339,68 +281,62 @@ export default function SlidesDashboard() {
                     <p className="text-sm text-gray-400">{previewTemplate.description}</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setPreviewTemplate(null)}
-                  className="p-2 rounded-full hover:bg-gray-100 transition"
-                >
+                <button onClick={() => setPreviewTemplate(null)} className="p-2 rounded-full hover:bg-gray-100 transition">
                   <X size={20} />
                 </button>
               </div>
 
-              {/* Thumbnail Preview */}
+              {/* Large Slide Preview */}
               <div className="p-6">
-                <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200">
-                  <img
-                    src={`/templates/thumbnails/${previewTemplate.id}.png`}
-                    alt={previewTemplate.name}
-                    className="w-full h-auto"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement
-                      target.style.display = 'none'
-                    }}
-                  />
-                </div>
+                <div
+                  className="rounded-2xl shadow-lg border relative aspect-video overflow-hidden"
+                  style={{ backgroundColor: `#${previewTemplate.styles.colors.bg}` }}
+                >
+                  {previewTemplate.styles.titleSlide.decoration === 'bar' && (
+                    <div className="absolute top-0 left-0 right-0 h-1/3" style={{ backgroundColor: `#${previewTemplate.styles.colors.accent}` }} />
+                  )}
+                  {previewTemplate.styles.titleSlide.decoration === 'circle' && (
+                    <>
+                      <div className="absolute -top-16 -left-16 w-48 h-48 rounded-full" style={{ backgroundColor: `#${previewTemplate.styles.colors.accent}`, opacity: 0.3 }} />
+                      <div className="absolute -bottom-16 -right-16 w-56 h-56 rounded-full" style={{ backgroundColor: `#${previewTemplate.styles.colors.secondary}`, opacity: 0.3 }} />
+                    </>
+                  )}
+                  {previewTemplate.styles.contentSlide.accentPosition === 'left' && (
+                    <div className="absolute left-0 top-0 bottom-0 w-2" style={{ backgroundColor: `#${previewTemplate.styles.colors.accent}` }} />
+                  )}
+                  {previewTemplate.styles.contentSlide.accentPosition === 'top' && (
+                    <div className="absolute top-0 left-0 right-0 h-2" style={{ backgroundColor: `#${previewTemplate.styles.colors.accent}` }} />
+                  )}
 
-                {/* Details */}
-                <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="text-gray-400 text-xs">Accent Style</p>
-                    <p className="font-medium text-gray-700 capitalize">
-                      {previewTemplate.styles.contentSlide.accentPosition || 'None'}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="text-gray-400 text-xs">Bullet Style</p>
-                    <p className="font-medium text-gray-700 capitalize">
-                      {previewTemplate.styles.contentSlide.bulletStyle}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="text-gray-400 text-xs">Title Alignment</p>
-                    <p className="font-medium text-gray-700 capitalize">
-                      {previewTemplate.styles.titleSlide.alignment}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="text-gray-400 text-xs">Decoration</p>
-                    <p className="font-medium text-gray-700 capitalize">
-                      {previewTemplate.styles.titleSlide.decoration || 'None'}
-                    </p>
+                  <div className="p-8 relative h-full flex flex-col">
+                    <h3 className="text-3xl font-bold mb-2" style={{ color: `#${previewTemplate.styles.colors.text}` }}>
+                      Sample Presentation Title
+                    </h3>
+                    <div className="w-16 h-1 rounded-full mb-6" style={{ backgroundColor: `#${previewTemplate.styles.colors.accent}` }} />
+                    <ul className="space-y-2 text-base flex-1" style={{ color: `#${previewTemplate.styles.colors.text}` }}>
+                      <li className="flex items-center gap-2"><span style={{ color: `#${previewTemplate.styles.colors.accent}` }}>▸</span> This is how your bullets will look</li>
+                      <li className="flex items-center gap-2"><span style={{ color: `#${previewTemplate.styles.colors.accent}` }}>▸</span> Multi-color design with shapes</li>
+                      <li className="flex items-center gap-2"><span style={{ color: `#${previewTemplate.styles.colors.accent}` }}>▸</span> Add images to make it visual</li>
+                    </ul>
+                    <div className="p-3 rounded-xl mt-4" style={{ backgroundColor: `#${previewTemplate.styles.colors.accent}20`, border: `1px solid #${previewTemplate.styles.colors.accent}` }}>
+                      <p className="text-sm italic" style={{ color: `#${previewTemplate.styles.colors.text}` }}>
+                        💡 Key takeaway appears here
+                      </p>
+                    </div>
                   </div>
                 </div>
 
                 {/* Actions */}
                 <div className="mt-6 flex gap-3">
-                  <a
-                    href={`/templates/${previewTemplate.id}.pptx`}
-                    download
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-medium transition flex items-center justify-center gap-2 text-sm"
+                  <button
+                    onClick={() => setPreviewTemplate(null)}
+                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-medium transition"
                   >
-                    <Download size={16} /> Download PPTX
-                  </a>
+                    Close
+                  </button>
                   <button
                     onClick={() => handleCreateWithTemplate(previewTemplate.id)}
-                    className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition flex items-center justify-center gap-2 text-sm"
+                    className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition flex items-center justify-center gap-2"
                   >
                     <Plus size={16} /> Use "{previewTemplate.name}"
                   </button>
