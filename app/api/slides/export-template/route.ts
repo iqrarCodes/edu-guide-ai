@@ -41,12 +41,21 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'No slides found in template' }, { status: 400 })
         }
 
-        // ✅ FIX: Null check + type assertion
-        const masterSlideFile = zip.file(slideFiles[0]) as any
+        // ✅ FIX: Use .asText() instead of .async('text')
+        const masterSlideFile = zip.files[slideFiles[0]] as any
         if (!masterSlideFile) {
             return NextResponse.json({ error: 'Master slide not found' }, { status: 404 })
         }
-        const masterSlideContent = await masterSlideFile.async('text')
+
+        let masterSlideContent: string
+        if (typeof masterSlideFile.asText === 'function') {
+            masterSlideContent = masterSlideFile.asText()
+        } else if (typeof masterSlideFile.async === 'function') {
+            masterSlideContent = await masterSlideFile.async('text')
+        } else {
+            throw new Error('Cannot read slide content')
+        }
+
         const masterSlideObj = parser.parse(masterSlideContent)
 
         // Clone slides for each slide data
@@ -69,12 +78,21 @@ export async function POST(request: NextRequest) {
             zip.file(`ppt/slides/slide${i + 1}.xml`, slideXmls[i])
         }
 
-        // ✅ FIX: Null check + type assertion for presentation.xml
-        const presFile = zip.file('ppt/presentation.xml') as any
+        // Update presentation.xml
+        const presFile = zip.files['ppt/presentation.xml'] as any
         if (!presFile) {
             return NextResponse.json({ error: 'presentation.xml not found' }, { status: 404 })
         }
-        const presContent = await presFile.async('text')
+
+        let presContent: string
+        if (typeof presFile.asText === 'function') {
+            presContent = presFile.asText()
+        } else if (typeof presFile.async === 'function') {
+            presContent = await presFile.async('text')
+        } else {
+            throw new Error('Cannot read presentation.xml')
+        }
+
         const presObj = parser.parse(presContent)
 
         const sldIdLst = presObj['p:presentation']?.['p:sldIdLst'] || {}
