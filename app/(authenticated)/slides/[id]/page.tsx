@@ -3,12 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { TEMPLATES } from '@/lib/templates'
-import TemplatePreview from '@/components/TemplatePreview'
+import { SLIDE_TEMPLATES, TemplateId } from '@/lib/slide-templates'
 import ImageUpload from '@/components/ImageUpload'
 import {
     ArrowLeft, Sparkles, FileText, Layers, Download, Loader2,
-    CheckCircle, Zap, AlertCircle
+    CheckCircle, Zap, AlertCircle, Eye, X
 } from 'lucide-react'
 
 export default function SlidesEditor() {
@@ -39,8 +38,9 @@ export default function SlidesEditor() {
     const [success, setSuccess] = useState('')
 
     // Template state
-    const [selectedTemplate, setSelectedTemplate] = useState('modern')
+    const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>('modern')
     const [slideImages, setSlideImages] = useState<Record<number, string>>({})
+    const [previewTemplate, setPreviewTemplate] = useState<any | null>(null)
 
     // ----- Fetch project & slides data -----
     useEffect(() => {
@@ -70,18 +70,21 @@ export default function SlidesEditor() {
                 setSlidesData(slidesData)
                 if (slidesData.outline) setOutline(slidesData.outline)
                 if (slidesData.slides) setSlides(slidesData.slides)
+                if (slidesData.template_id) {
+                    setSelectedTemplate(slidesData.template_id as TemplateId)
+                }
             }
             setLoading(false)
         }
         fetchData()
     }, [projectId, supabase, router])
 
-    // Read template from URL
+    // ----- Read template from URL (?template=xxx) -----
     useEffect(() => {
-        const params = new URLSearchParams(window.location.search)
-        const template = params.get('template')
-        if (template && TEMPLATES[template]) {
-            setSelectedTemplate(template)
+        const urlParams = new URLSearchParams(window.location.search)
+        const template = urlParams.get('template')
+        if (template && SLIDE_TEMPLATES[template as TemplateId]) {
+            setSelectedTemplate(template as TemplateId)
         }
     }, [])
 
@@ -130,12 +133,6 @@ export default function SlidesEditor() {
 
             setOutline(data.outline)
             setSuccess('✅ Outline generated successfully!')
-            const { data: updatedData } = await supabase
-                .from('slides_data')
-                .select('*')
-                .eq('project_id', projectId)
-                .single()
-            if (updatedData) setSlidesData(updatedData)
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -166,6 +163,7 @@ export default function SlidesEditor() {
                     audience,
                     mode,
                     outline,
+                    templateId: selectedTemplate,
                 }),
             })
 
@@ -174,12 +172,6 @@ export default function SlidesEditor() {
 
             setSlides(data.slides)
             setSuccess('✅ Slides generated successfully!')
-            const { data: updatedData } = await supabase
-                .from('slides_data')
-                .select('*')
-                .eq('project_id', projectId)
-                .single()
-            if (updatedData) setSlidesData(updatedData)
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -187,7 +179,7 @@ export default function SlidesEditor() {
         }
     }
 
-    // ----- Export (Template-Based) -----
+    // ----- Export (Template-Based with Images) -----
     const handleExport = async () => {
         if (!slides || slides.length === 0) {
             setError('No slides to export. Generate slides first.')
@@ -204,9 +196,11 @@ export default function SlidesEditor() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     templateId: selectedTemplate,
-                    slides: slides.map((s: any) => ({
+                    slides: slides.map((s: any, idx: number) => ({
                         title: s.title,
                         bullets: s.bullets || [],
+                        key_takeaway: s.key_takeaway || '',
+                        image: slideImages[idx] || null,
                     })),
                     title: project?.name || 'Presentation',
                 }),
@@ -243,13 +237,13 @@ export default function SlidesEditor() {
         )
     }
 
-    const template = TEMPLATES[selectedTemplate] || TEMPLATES.modern
-    const colors = template.colors
+    const template = SLIDE_TEMPLATES[selectedTemplate] || SLIDE_TEMPLATES.modern
+    const colors = template.styles.colors
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50/30 p-6 md:p-8">
             <div className="max-w-6xl mx-auto">
-                {/* HEADER */}
+                {/* ===== HEADER ===== */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                     <div>
                         <button
@@ -271,12 +265,12 @@ export default function SlidesEditor() {
                             className="bg-green-50 hover:bg-green-100 text-green-700 px-4 py-2.5 rounded-xl font-medium transition flex items-center gap-2 disabled:opacity-50 text-sm"
                         >
                             <Download size={16} />
-                            {exporting ? 'Exporting...' : 'Download PPTX (Template)'}
+                            {exporting ? 'Exporting...' : 'Download PPTX'}
                         </button>
                     )}
                 </div>
 
-                {/* Error / Success */}
+                {/* ===== Error / Success ===== */}
                 {error && (
                     <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4 flex items-start gap-2">
                         <AlertCircle size={20} className="flex-shrink-0 mt-0.5" />
@@ -290,7 +284,7 @@ export default function SlidesEditor() {
                     </div>
                 )}
 
-                {/* STEP 1: CONFIGURATION */}
+                {/* ===== STEP 1: CONFIGURATION ===== */}
                 <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-white/30 mb-6">
                     <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                         <Sparkles size={20} className="text-purple-600" />
@@ -374,7 +368,7 @@ export default function SlidesEditor() {
                     </button>
                 </div>
 
-                {/* STEP 2: OUTLINE */}
+                {/* ===== STEP 2: OUTLINE ===== */}
                 {outline && (
                     <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-white/30 mb-6">
                         <div className="flex items-center justify-between mb-4">
@@ -406,25 +400,82 @@ export default function SlidesEditor() {
                     </div>
                 )}
 
-                {/* 🎨 TEMPLATE PREVIEW */}
+                {/* ===== 🎨 STEP 3: CHOOSE TEMPLATE (16 TEMPLATES) ===== */}
                 <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-white/30 mb-6">
                     <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        🎨 Choose Template
+                        🎨 Step 3: Choose Template
                     </h2>
-                    <TemplatePreview
-                        selected={selectedTemplate}
-                        onSelect={setSelectedTemplate}
-                        slides={slides || []}
-                    />
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {Object.values(SLIDE_TEMPLATES).map((tpl) => {
+                            const c = tpl.styles.colors
+                            const s = tpl.styles
+                            const isSelected = selectedTemplate === tpl.id
+                            return (
+                                <div
+                                    key={tpl.id}
+                                    className={`rounded-2xl p-3 border-2 transition cursor-pointer hover:shadow-lg ${isSelected
+                                            ? 'border-purple-600 bg-purple-50 shadow-md'
+                                            : 'border-gray-200 hover:border-purple-300 bg-white'
+                                        }`}
+                                    onClick={() => setSelectedTemplate(tpl.id)}
+                                >
+                                    {/* Mini Preview */}
+                                    <div
+                                        className="relative h-20 rounded-xl overflow-hidden mb-2"
+                                        style={{ backgroundColor: `#${c.bg}` }}
+                                    >
+                                        {s.titleSlide.decoration === 'bar' && (
+                                            <div className="absolute top-0 left-0 right-0 h-6" style={{ backgroundColor: `#${c.accent}` }} />
+                                        )}
+                                        {s.titleSlide.decoration === 'circle' && (
+                                            <>
+                                                <div className="absolute -top-1 -left-1 w-8 h-8 rounded-full" style={{ backgroundColor: `#${c.accent}`, opacity: 0.4 }} />
+                                                <div className="absolute bottom-1 right-1 w-6 h-6 rounded-full" style={{ backgroundColor: `#${c.secondary}`, opacity: 0.4 }} />
+                                            </>
+                                        )}
+                                        {s.contentSlide.accentPosition === 'left' && (
+                                            <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: `#${c.accent}` }} />
+                                        )}
+                                        {s.contentSlide.accentPosition === 'top' && (
+                                            <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: `#${c.accent}` }} />
+                                        )}
+                                        <div className="absolute bottom-1.5 left-2 right-2">
+                                            <p className="text-[10px] font-bold truncate" style={{ color: `#${c.text}` }}>
+                                                {tpl.icon} {tpl.name}
+                                            </p>
+                                            <div className="h-0.5 w-6 mt-0.5 rounded-full" style={{ backgroundColor: `#${c.accent}` }} />
+                                        </div>
+                                        {isSelected && (
+                                            <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center">
+                                                <CheckCircle size={12} className="text-white" />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <p className="font-semibold text-gray-800 text-xs truncate">{tpl.name}</p>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            setPreviewTemplate(tpl)
+                                        }}
+                                        className="mt-1 w-full text-[10px] text-purple-600 hover:text-purple-800 font-medium flex items-center justify-center gap-1"
+                                    >
+                                        <Eye size={10} /> Preview
+                                    </button>
+                                </div>
+                            )
+                        })}
+                    </div>
                 </div>
 
-                {/* STEP 3: SLIDES */}
+                {/* ===== STEP 4: SLIDES ===== */}
                 {slides && (
                     <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-white/30">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                                 <CheckCircle size={20} className="text-green-600" />
-                                Step 3: Your Slides ({slides.length})
+                                Step 4: Your Slides ({slides.length})
                             </h2>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -437,26 +488,33 @@ export default function SlidesEditor() {
                                         borderColor: colors.accent + '40',
                                     }}
                                 >
-                                    <ImageUpload
-                                        onImageUpload={(file, preview) => {
-                                            setSlideImages(prev => ({ ...prev, [idx]: preview }))
-                                        }}
-                                        currentImage={slideImages[idx]}
-                                        onRemove={() => {
-                                            setSlideImages(prev => {
-                                                const updated = { ...prev }
-                                                delete updated[idx]
-                                                return updated
-                                            })
-                                        }}
-                                        placeholder="📷 Add image"
-                                    />
+                                    {/* Image Upload */}
+                                    <div className="mb-4">
+                                        <ImageUpload
+                                            onImageUpload={(file, preview) => {
+                                                setSlideImages(prev => ({ ...prev, [idx]: preview }))
+                                            }}
+                                            currentImage={slideImages[idx]}
+                                            onRemove={() => {
+                                                setSlideImages(prev => {
+                                                    const updated = { ...prev }
+                                                    delete updated[idx]
+                                                    return updated
+                                                })
+                                            }}
+                                            placeholder="📷 Add image (optional)"
+                                        />
+                                    </div>
+
+                                    {/* Title */}
                                     <div
                                         className="text-lg font-bold mb-3"
-                                        style={{ color: colors.title }}
+                                        style={{ color: colors.text }}
                                     >
                                         {idx + 1}. {slide.title}
                                     </div>
+
+                                    {/* Bullets */}
                                     <ul className="space-y-2">
                                         {slide.bullets?.map((bullet: string, bi: number) => (
                                             <li
@@ -464,17 +522,20 @@ export default function SlidesEditor() {
                                                 className="text-sm flex items-start gap-2 text-justify"
                                                 style={{ color: colors.text }}
                                             >
-                                                <span style={{ color: colors.accent }} className="flex-shrink-0">•</span>
+                                                <span style={{ color: colors.accent }} className="flex-shrink-0">▸</span>
                                                 <span className="text-justify">{renderBulletWithHighlights(bullet)}</span>
                                             </li>
                                         ))}
                                     </ul>
+
+                                    {/* Key Takeaway */}
                                     {slide.key_takeaway && (
                                         <p
                                             className="mt-3 text-xs italic p-2 rounded-lg text-justify"
                                             style={{
-                                                background: colors.highlight,
+                                                background: `#${colors.accent}15`,
                                                 color: colors.text,
+                                                borderLeft: `3px solid #${colors.accent}`,
                                             }}
                                         >
                                             💡 {slide.key_takeaway}
@@ -486,6 +547,111 @@ export default function SlidesEditor() {
                     </div>
                 )}
             </div>
+
+            {/* ===== TEMPLATE PREVIEW MODAL ===== */}
+            {previewTemplate && (
+                <div
+                    className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50"
+                    onClick={() => setPreviewTemplate(null)}
+                >
+                    <div
+                        className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                            <div className="flex items-center gap-3">
+                                <span className="text-3xl">{previewTemplate.icon}</span>
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-800">{previewTemplate.name}</h2>
+                                    <p className="text-sm text-gray-400">{previewTemplate.description}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setPreviewTemplate(null)}
+                                className="p-2 rounded-full hover:bg-gray-100 transition"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Large Preview */}
+                        <div className="p-6">
+                            <div
+                                className="rounded-2xl shadow-lg border relative aspect-video overflow-hidden"
+                                style={{ backgroundColor: `#${previewTemplate.styles.colors.bg}` }}
+                            >
+                                {previewTemplate.styles.titleSlide.decoration === 'bar' && (
+                                    <div className="absolute top-0 left-0 right-0 h-1/3" style={{ backgroundColor: `#${previewTemplate.styles.colors.accent}` }} />
+                                )}
+                                {previewTemplate.styles.titleSlide.decoration === 'circle' && (
+                                    <>
+                                        <div className="absolute -top-16 -left-16 w-48 h-48 rounded-full" style={{ backgroundColor: `#${previewTemplate.styles.colors.accent}`, opacity: 0.3 }} />
+                                        <div className="absolute -bottom-16 -right-16 w-56 h-56 rounded-full" style={{ backgroundColor: `#${previewTemplate.styles.colors.secondary}`, opacity: 0.3 }} />
+                                    </>
+                                )}
+                                {previewTemplate.styles.contentSlide.accentPosition === 'left' && (
+                                    <div className="absolute left-0 top-0 bottom-0 w-2" style={{ backgroundColor: `#${previewTemplate.styles.colors.accent}` }} />
+                                )}
+                                {previewTemplate.styles.contentSlide.accentPosition === 'top' && (
+                                    <div className="absolute top-0 left-0 right-0 h-2" style={{ backgroundColor: `#${previewTemplate.styles.colors.accent}` }} />
+                                )}
+
+                                <div className="p-8 relative h-full flex flex-col">
+                                    <h3 className="text-3xl font-bold mb-2" style={{ color: `#${previewTemplate.styles.colors.text}` }}>
+                                        Sample Presentation Title
+                                    </h3>
+                                    <div className="w-16 h-1 rounded-full mb-6" style={{ backgroundColor: `#${previewTemplate.styles.colors.accent}` }} />
+                                    <ul className="space-y-2 text-base flex-1" style={{ color: `#${previewTemplate.styles.colors.text}` }}>
+                                        <li className="flex items-center gap-2">
+                                            <span style={{ color: `#${previewTemplate.styles.colors.accent}` }}>▸</span>
+                                            Multi-color design with shapes
+                                        </li>
+                                        <li className="flex items-center gap-2">
+                                            <span style={{ color: `#${previewTemplate.styles.colors.accent}` }}>▸</span>
+                                            Custom colors, banners, and decorations
+                                        </li>
+                                        <li className="flex items-center gap-2">
+                                            <span style={{ color: `#${previewTemplate.styles.colors.accent}` }}>▸</span>
+                                            Add images to make it visual
+                                        </li>
+                                    </ul>
+                                    <div
+                                        className="p-3 rounded-xl mt-4"
+                                        style={{
+                                            backgroundColor: `#${previewTemplate.styles.colors.accent}15`,
+                                            borderLeft: `3px solid #${previewTemplate.styles.colors.accent}`,
+                                        }}
+                                    >
+                                        <p className="text-sm italic" style={{ color: `#${previewTemplate.styles.colors.text}` }}>
+                                            💡 Key takeaway appears here
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="mt-6 flex gap-3">
+                                <button
+                                    onClick={() => setPreviewTemplate(null)}
+                                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-medium transition"
+                                >
+                                    Close
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setSelectedTemplate(previewTemplate.id)
+                                        setPreviewTemplate(null)
+                                    }}
+                                    className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition flex items-center justify-center gap-2"
+                                >
+                                    <CheckCircle size={16} /> Use "{previewTemplate.name}"
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
