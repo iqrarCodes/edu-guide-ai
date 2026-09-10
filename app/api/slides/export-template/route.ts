@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import PizZip from 'pizzip'
-import { XMLParser, XMLBuilder } from 'fast-xml-parser'
 import path from 'path'
 import fs from 'fs'
 
@@ -28,10 +27,7 @@ export async function POST(request: NextRequest) {
         const templateBuffer = fs.readFileSync(templatePath)
         const zip = new PizZip(templateBuffer)
 
-        const parser = new XMLParser({ ignoreAttributes: false })
-        const builder = new XMLBuilder({ format: true, ignoreAttributes: false })
-
-        // Get master slide
+        // Get master slide XML (pehli slide)
         const slideFiles = Object.keys(zip.files).filter(
             f => f.startsWith('ppt/slides/slide') && f.endsWith('.xml')
         )
@@ -41,30 +37,33 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'No slides found in template' }, { status: 400 })
         }
 
-        // ✅ FIX: Use .asText() instead of .async('text')
-        const masterSlideFile = zip.files[slideFiles[0]] as any
+        // ✅ Read master slide XML as string (NO PARSING)
+        const masterSlideFile = zip.file(slideFiles[0]) as any
         if (!masterSlideFile) {
             return NextResponse.json({ error: 'Master slide not found' }, { status: 404 })
         }
 
-        let masterSlideContent: string
-        if (typeof masterSlideFile.asText === 'function') {
-            masterSlideContent = masterSlideFile.asText()
-        } else if (typeof masterSlideFile.async === 'function') {
-            masterSlideContent = await masterSlideFile.async('text')
-        } else {
-            throw new Error('Cannot read slide content')
+        let masterSlideXml: string
+        try {
+            masterSlideXml = masterSlideFile.asText()
+        } catch {
+            masterSlideXml = await masterSlideFile.async('text')
         }
 
-        const masterSlideObj = parser.parse(masterSlideContent)
-
-        // Clone slides for each slide data
+        // ✅ Clone and replace text in each slide WITHOUT parsing XML
         const slideXmls: string[] = []
         for (const data of slides) {
-            const clone = JSON.parse(JSON.stringify(masterSlideObj))
-            replaceTextInObject(clone, '{title}', data.title || 'Untitled')
-            replaceTextInObject(clone, '{bullets}', (data.bullets || ['No content']).join('\n'))
-            const xml = builder.build(clone)
+            let xml = masterSlideXml  // Copy string directly
+
+            // Replace {title} and {bullets} with actual data
+            const titleText = escapeXml(data.title || 'Untitled')
+            const bulletsText = (data.bullets || ['No content'])
+                .map((b: string) => escapeXml(b))
+                .join('\n')
+
+            xml = xml.split('{title}').join(titleText)
+            xml = xml.split('{bullets}').join(bulletsText)
+
             slideXmls.push(xml)
         }
 
@@ -73,41 +72,93 @@ export async function POST(request: NextRequest) {
             zip.remove(f)
         }
 
-        // Add new slides
+        // Add new slide files
         for (let i = 0; i < slideXmls.length; i++) {
             zip.file(`ppt/slides/slide${i + 1}.xml`, slideXmls[i])
         }
 
-        // Update presentation.xml
-        const presFile = zip.files['ppt/presentation.xml'] as any
+        // ✅ Update presentation.xml – read as string, regex replace
+        const presFile = zip.file('ppt/presentation.xml') as any
         if (!presFile) {
             return NextResponse.json({ error: 'presentation.xml not found' }, { status: 404 })
         }
 
-        let presContent: string
-        if (typeof presFile.asText === 'function') {
-            presContent = presFile.asText()
-        } else if (typeof presFile.async === 'function') {
-            presContent = await presFile.async('text')
-        } else {
-            throw new Error('Cannot read presentation.xml')
+        let presXml: string
+        try {
+            presXml = presFile.asText()
+        } catch {
+            presXml = await presFile.async('text')
         }
 
-        const presObj = parser.parse(presContent)
+        // Build new sldIdLst XML
+        const newSldIdLst = slideXmls.map((_, i) =>
+            `<p:sldId id="${256 + i}" r:id="rId${i + 1}"/>`
+        ).join('')
 
-        const sldIdLst = presObj['p:presentation']?.['p:sldIdLst'] || {}
-        sldIdLst['p:sldId'] = []
-        for (let i = 0; i < slideXmls.length; i++) {
-            sldIdLst['p:sldId'].push({
-                '@_id': 256 + i,
-                '@_r:id': `rId${i + 1}`,
-            })
+        // Replace existing sldIdLst content
+        presXml = presXml.replace(
+            /<p:sldIdLst>[\s\S]*?<\/p:sldIdLst>/,
+            `<p:sldIdLst>${newSldIdLst}</p:sldIdLst>`
+        )
+
+        // Agar sldIdLst nahi mila toh add karo (very rare)
+        if (!presXml.includes('<p:sldIdLst>')) {
+            presXml = presXml.replace(
+                /<p:presentation[^>]*>/,
+                (match) => `${match}<p:sldIdLst>${newSldIdLst}</p:sldIdLst>`
+            )
         }
-        presObj['p:presentation']['p:sldIdLst'] = sldIdLst
-        zip.file('ppt/presentation.xml', builder.build(presObj))
 
-        // Generate buffer
-        const outputBuffer = await zip.generate({ type: 'nodebuffer' }) as Buffer
+        zip.file('ppt/presentation.xml', presXml)
+
+        // ✅ Update Content_Types.xml – ensure all slides are listed
+        const ctFile = zip.file('[Content_Types].xml') as any
+        if (ctFile) {
+            let ctXml: string
+            try {
+                ctXml = ctFile.asText()
+            } catch {
+                ctXml = await ctFile.async('text')
+            }
+
+            // Remove existing slide overrides
+            ctXml = ctXml.replace(/<Override PartName="\/ppt\/slides\/slide\d+\.xml"[^\/]*\/>/g, '')
+
+            // Add new slide overrides
+            const slideOverrides = slideXmls.map((_, i) =>
+                `<Override PartName="/ppt/slides/slide${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`
+            ).join('')
+
+            // Insert before closing </Types>
+            ctXml = ctXml.replace('</Types>', `${slideOverrides}</Types>`)
+            zip.file('[Content_Types].xml', ctXml)
+        }
+
+        // ✅ Update presentation.xml.rels to have proper slide relationships
+        const relsPath = 'ppt/_rels/presentation.xml.rels'
+        const relsFile = zip.file(relsPath) as any
+        if (relsFile) {
+            let relsXml: string
+            try {
+                relsXml = relsFile.asText()
+            } catch {
+                relsXml = await relsFile.async('text')
+            }
+
+            // Remove existing slide relationships
+            relsXml = relsXml.replace(/<Relationship[^>]*Type="[^"]*\/slide"[^>]*\/>/g, '')
+
+            // Add new slide relationships
+            const slideRels = slideXmls.map((_, i) =>
+                `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${i + 1}.xml"/>`
+            ).join('')
+
+            relsXml = relsXml.replace('</Relationships>', `${slideRels}</Relationships>`)
+            zip.file(relsPath, relsXml)
+        }
+
+        // Generate final buffer
+        const outputBuffer = zip.generate({ type: 'nodebuffer' }) as Buffer
 
         return new NextResponse(new Uint8Array(outputBuffer), {
             headers: {
@@ -124,20 +175,12 @@ export async function POST(request: NextRequest) {
     }
 }
 
-function replaceTextInObject(obj: any, search: string, replace: string) {
-    if (typeof obj === 'string') {
-        return obj.replace(new RegExp(search, 'g'), replace)
-    }
-    if (Array.isArray(obj)) {
-        for (let i = 0; i < obj.length; i++) {
-            obj[i] = replaceTextInObject(obj[i], search, replace)
-        }
-    } else if (obj && typeof obj === 'object') {
-        for (const key in obj) {
-            if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                obj[key] = replaceTextInObject(obj[key], search, replace)
-            }
-        }
-    }
-    return obj
+// ✅ Escape special XML characters
+function escapeXml(text: string): string {
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;')
 }
