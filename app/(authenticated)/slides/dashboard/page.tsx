@@ -171,55 +171,55 @@ export default function SlidesDashboard() {
           </div>
         </div>
 
-        {/* ===== 🎨 TEMPLATES GALLERY (WITH REAL PREVIEW) ===== */}
+        {/* ===== 🎨 TEMPLATES GALLERY (WITH THUMBNAILS) ===== */}
         <div ref={templatesRef} className="mb-8 scroll-mt-20">
           <h3 className="text-lg font-bold text-gray-800 mb-4">🎨 Available Templates</h3>
-          <p className="text-gray-400 text-sm mb-4">Click "Preview" to see the actual PPTX file design.</p>
+          <p className="text-gray-400 text-sm mb-4">
+            Click on any template to see full preview and use it.
+          </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {Object.values(SLIDE_TEMPLATES).map((template) => (
               <motion.div
                 key={template.id}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-white/30 hover:shadow-xl transition cursor-pointer hover:-translate-y-1 group"
+                className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 shadow-sm border border-white/30 hover:shadow-xl transition cursor-pointer hover:-translate-y-1 group"
                 whileHover={{ y: -6 }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.1 * (Object.values(SLIDE_TEMPLATES).indexOf(template) + 1) }}
               >
-                <div
-                  className="h-20 rounded-xl mb-3 flex items-center justify-center text-sm font-medium overflow-hidden relative"
-                  style={{ backgroundColor: `#${template.styles.colors.bg}` }}
-                >
-                  <span style={{ color: `#${template.styles.colors.text}` }}>
-                    {template.icon} {template.name}
-                  </span>
-                  {template.styles.contentSlide.accentPosition === 'left' && (
-                    <div
-                      className="absolute left-0 top-0 h-full w-1.5"
-                      style={{ backgroundColor: `#${template.styles.colors.accent}` }}
-                    />
-                  )}
-                  {template.styles.titleSlide.decoration === 'bar' && (
-                    <div
-                      className="absolute bottom-0 left-1/4 w-1/2 h-1"
-                      style={{ backgroundColor: `#${template.styles.colors.accent}` }}
-                    />
-                  )}
+                {/* ✅ THUMBNAIL IMAGE */}
+                <div className="relative w-full aspect-video rounded-xl overflow-hidden mb-3 bg-gray-100">
+                  <img
+                    src={`/templates/thumbnails/${template.id}.png`}
+                    alt={template.name}
+                    className="w-full h-full object-cover transition group-hover:scale-105"
+                    onError={(e) => {
+                      // Fallback: agar thumbnail na ho toh CSS mockup dikhao
+                      const target = e.target as HTMLImageElement
+                      target.style.display = 'none'
+                      target.parentElement!.innerHTML = `
+                        <div class="w-full h-full flex flex-col items-center justify-center text-xs font-medium" 
+                             style="background-color: #${template.styles.colors.bg}; color: #${template.styles.colors.text};">
+                          <span>${template.icon} ${template.name}</span>
+                          <span class="text-[10px] opacity-60 mt-1">No thumbnail</span>
+                        </div>
+                      `
+                    }}
+                  />
+                  {/* Overlay on hover */}
+                  <div className="absolute inset-0 bg-purple-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                    <Eye className="w-6 h-6 text-white" />
+                  </div>
                 </div>
+
                 <p className="font-semibold text-gray-800 text-sm">{template.name}</p>
-                <p className="text-xs text-gray-400">{template.description}</p>
+                <p className="text-xs text-gray-400 line-clamp-1">{template.description}</p>
                 <div className="flex items-center gap-2 mt-3">
-                  {/* ✅ REAL PREVIEW (No Alert) */}
                   <button
                     className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-600 text-xs font-medium py-1.5 rounded-xl transition flex items-center justify-center gap-1"
                     onClick={(e) => {
                       e.stopPropagation()
-                      const fileUrl = `/templates/${template.id}.pptx`
-                      window.open(
-                        `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(
-                          window.location.origin + fileUrl
-                        )}`,
-                        '_blank'
-                      )
+                      setPreviewTemplate(template)
                     }}
                   >
                     <Eye size={12} /> Preview
@@ -312,6 +312,104 @@ export default function SlidesDashboard() {
           )}
         </div>
       </div>
+
+      {/* ===== PREVIEW MODAL (WITH THUMBNAIL) ===== */}
+      <AnimatePresence>
+        {previewTemplate && (
+          <motion.div
+            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setPreviewTemplate(null)}
+          >
+            <motion.div
+              className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">{previewTemplate.icon}</span>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-800">{previewTemplate.name}</h2>
+                    <p className="text-sm text-gray-400">{previewTemplate.description}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setPreviewTemplate(null)}
+                  className="p-2 rounded-full hover:bg-gray-100 transition"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Thumbnail Preview */}
+              <div className="p-6">
+                <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200">
+                  <img
+                    src={`/templates/thumbnails/${previewTemplate.id}.png`}
+                    alt={previewTemplate.name}
+                    className="w-full h-auto"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      target.style.display = 'none'
+                    }}
+                  />
+                </div>
+
+                {/* Details */}
+                <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <p className="text-gray-400 text-xs">Accent Style</p>
+                    <p className="font-medium text-gray-700 capitalize">
+                      {previewTemplate.styles.contentSlide.accentPosition || 'None'}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <p className="text-gray-400 text-xs">Bullet Style</p>
+                    <p className="font-medium text-gray-700 capitalize">
+                      {previewTemplate.styles.contentSlide.bulletStyle}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <p className="text-gray-400 text-xs">Title Alignment</p>
+                    <p className="font-medium text-gray-700 capitalize">
+                      {previewTemplate.styles.titleSlide.alignment}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <p className="text-gray-400 text-xs">Decoration</p>
+                    <p className="font-medium text-gray-700 capitalize">
+                      {previewTemplate.styles.titleSlide.decoration || 'None'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="mt-6 flex gap-3">
+                  <a
+                    href={`/templates/${previewTemplate.id}.pptx`}
+                    download
+                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-medium transition flex items-center justify-center gap-2 text-sm"
+                  >
+                    <Download size={16} /> Download PPTX
+                  </a>
+                  <button
+                    onClick={() => handleCreateWithTemplate(previewTemplate.id)}
+                    className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition flex items-center justify-center gap-2 text-sm"
+                  >
+                    <Plus size={16} /> Use "{previewTemplate.name}"
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

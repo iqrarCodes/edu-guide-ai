@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
         const parser = new XMLParser({ ignoreAttributes: false })
         const builder = new XMLBuilder({ format: true, ignoreAttributes: false })
 
-        // Get master slide
+        // ✅ Get master slide using zip.file()
         const slideFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/slides/slide') && f.endsWith('.xml'))
         slideFiles.sort()
 
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'No slides found in template' }, { status: 400 })
         }
 
-        const masterSlideFile = zip.files[slideFiles[0]] as any
+        const masterSlideFile = zip.file(slideFiles[0])   // ✅ Use zip.file()
         const masterSlideContent = await masterSlideFile.async('text')
         const masterSlideObj = parser.parse(masterSlideContent)
 
@@ -63,8 +63,8 @@ export async function POST(request: NextRequest) {
             zip.file(`ppt/slides/slide${i + 1}.xml`, slideXmls[i])
         }
 
-        // Update presentation.xml
-        const presFile = zip.files['ppt/presentation.xml'] as any
+        // ✅ Update presentation.xml using zip.file()
+        const presFile = zip.file('ppt/presentation.xml')
         const presContent = await presFile.async('text')
         const presObj = parser.parse(presContent)
 
@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
         presObj['p:presentation']['p:sldIdLst'] = sldIdLst
         zip.file('ppt/presentation.xml', builder.build(presObj))
 
+        // Generate buffer
         const outputBuffer = await zip.generate({ type: 'nodebuffer' }) as Buffer
 
         return new NextResponse(new Uint8Array(outputBuffer), {
