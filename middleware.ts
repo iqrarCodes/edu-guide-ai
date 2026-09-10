@@ -35,13 +35,38 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Public routes (no auth required)
-  const publicRoutes = ['/', '/login', '/signup', '/auth/callback']
-  if (publicRoutes.includes(request.nextUrl.pathname)) {
+  // ============================================================
+  // ✅ PUBLIC ROUTES (No auth required)
+  // ============================================================
+  const publicRoutes = [
+    '/',
+    '/login',
+    '/signup',
+    '/auth/callback',
+    '/templates',        // ✅ Templates folder public
+    '/api/auth',         // ✅ Auth API public
+  ]
+
+  const pathname = request.nextUrl.pathname
+
+  // ✅ Allow templates folder and its subfolders (thumbnails, etc.)
+  if (pathname.startsWith('/templates')) {
     return response
   }
 
-  // Protected routes - redirect to login if not authenticated
+  // ✅ Allow auth API routes
+  if (pathname.startsWith('/api/auth')) {
+    return response
+  }
+
+  // ✅ Allow other public routes
+  if (publicRoutes.includes(pathname)) {
+    return response
+  }
+
+  // ============================================================
+  // PROTECTED ROUTES – Redirect to login if not authenticated
+  // ============================================================
   if (!user) {
     const redirectUrl = new URL('/login', request.url)
     return NextResponse.redirect(redirectUrl)
@@ -50,8 +75,19 @@ export async function middleware(request: NextRequest) {
   return response
 }
 
+// ============================================================
+// ✅ MATCHER – Skip static files, templates, images, etc.
+// ============================================================
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    /*
+     * Match all request paths EXCEPT:
+     * - _next/static (static files)
+     * - _next/image (image optimization)
+     * - favicon.ico
+     * - templates (public templates folder with .pptx and .png)
+     * - Any static file (svg, png, jpg, jpeg, gif, webp, pptx, docx, pdf)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|templates|.*\\.(?:svg|png|jpg|jpeg|gif|webp|pptx|docx|pdf)$).*)',
   ],
 }
