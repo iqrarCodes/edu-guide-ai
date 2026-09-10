@@ -33,9 +33,6 @@ export async function POST(request: NextRequest) {
     }
 }
 
-// ============================================================
-// DESIGNER PPTX GENERATOR (Multi-Color, Shapes, Images)
-// ============================================================
 async function generateDesignerPPTX(slides: any[], title: string, template: any): Promise<Buffer> {
     const colors = template.styles.colors
     const styles = template.styles
@@ -43,13 +40,13 @@ async function generateDesignerPPTX(slides: any[], title: string, template: any)
     pptx.defineLayout({ name: 'WIDE', width: 13.33, height: 7.5 })
     pptx.layout = 'WIDE'
 
+    // Clean text - remove ALL emojis and control characters
     const clean = (text: string): string => {
         if (!text) return ''
         return text
             .replace(/[\x00-\x1F\x7F]/g, '')
-            .replace(/💡/g, '')
-            .replace(/[✅✔]/g, '✓')
-            .replace(/▶/g, '▸')
+            .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')  // All emojis
+            .replace(/[✅✔▶🎨✨📚💼🌿🌙💡📊🎓📱🚀📈📋🎯📉🎁☁️🛠️]/g, '')
             .trim()
     }
 
@@ -60,16 +57,11 @@ async function generateDesignerPPTX(slides: any[], title: string, template: any)
     titleSlide.background = { color: colors.bg }
 
     if (styles.titleSlide.decoration === 'bar') {
-        // Top colored banner
+        // Top banner (solid, no transparency)
         titleSlide.addShape(pptx.ShapeType.rect, {
             x: 0, y: 0, w: 13.33, h: 3,
             fill: { color: colors.accent },
-        })
-        // Decorative circle overlapping banner
-        titleSlide.addShape(pptx.ShapeType.ellipse, {
-            x: 10, y: 1.5, w: 3, h: 3,
-            fill: { color: colors.secondary, transparency: 60 },
-            line: { color: colors.secondary, transparency: 60 },
+            line: { color: colors.accent },
         })
         // Title text
         titleSlide.addText(clean(title), {
@@ -87,18 +79,19 @@ async function generateDesignerPPTX(slides: any[], title: string, template: any)
         titleSlide.addShape(pptx.ShapeType.rect, {
             x: 5, y: 5.3, w: 3.33, h: 0.1,
             fill: { color: colors.accent },
+            line: { color: colors.accent },
         })
     } else if (styles.titleSlide.decoration === 'circle') {
-        // Big circles in background
+        // Circles WITHOUT transparency
         titleSlide.addShape(pptx.ShapeType.ellipse, {
             x: -1.5, y: -1.5, w: 6, h: 6,
-            fill: { color: colors.accent, transparency: 75 },
-            line: { color: colors.accent, transparency: 75 },
+            fill: { color: colors.secondary },
+            line: { color: colors.secondary },
         })
         titleSlide.addShape(pptx.ShapeType.ellipse, {
             x: 9.5, y: 3.5, w: 5, h: 5,
-            fill: { color: colors.secondary, transparency: 75 },
-            line: { color: colors.secondary, transparency: 75 },
+            fill: { color: colors.secondary },
+            line: { color: colors.secondary },
         })
         // Center title
         titleSlide.addText(clean(title), {
@@ -112,7 +105,7 @@ async function generateDesignerPPTX(slides: any[], title: string, template: any)
             align: 'center', fontFace: 'Arial',
         })
     } else {
-        // Clean academic style
+        // Academic style
         titleSlide.addText(clean(title), {
             x: 1, y: 2, w: 11.33, h: 2,
             fontSize: 44, color: colors.text, bold: true,
@@ -123,15 +116,15 @@ async function generateDesignerPPTX(slides: any[], title: string, template: any)
             fontSize: 18, color: colors.primary,
             align: 'left', fontFace: 'Arial',
         })
-        // Left accent line
         titleSlide.addShape(pptx.ShapeType.rect, {
             x: 1, y: 5.2, w: 3, h: 0.06,
             fill: { color: colors.accent },
+            line: { color: colors.accent },
         })
     }
 
     // ============================================================
-    // CONTENT SLIDES (with images support)
+    // CONTENT SLIDES
     // ============================================================
     slides.forEach((slide: any, idx: number) => {
         const s = pptx.addSlide()
@@ -139,25 +132,27 @@ async function generateDesignerPPTX(slides: any[], title: string, template: any)
 
         const hasImage = !!slide.image
 
-        // --- Left or Top accent bar ---
+        // Accent bar
         if (styles.contentSlide.accentPosition === 'left') {
             s.addShape(pptx.ShapeType.rect, {
                 x: 0, y: 0, w: 0.25, h: 7.5,
                 fill: { color: colors.accent },
+                line: { color: colors.accent },
             })
         } else if (styles.contentSlide.accentPosition === 'top') {
             s.addShape(pptx.ShapeType.rect, {
                 x: 0, y: 0, w: 13.33, h: 0.4,
                 fill: { color: colors.accent },
+                line: { color: colors.accent },
             })
         }
 
-        // --- Slide number badge ---
+        // Slide number badge (WITHOUT rectRadius)
         if (styles.contentSlide.accentPosition === 'left') {
             s.addShape(pptx.ShapeType.rect, {
                 x: 0.5, y: 0.5, w: 0.9, h: 0.6,
                 fill: { color: colors.accent },
-                rectRadius: 4,
+                line: { color: colors.accent },
             })
             s.addText(String(idx + 1).padStart(2, '0'), {
                 x: 0.5, y: 0.5, w: 0.9, h: 0.6,
@@ -166,7 +161,6 @@ async function generateDesignerPPTX(slides: any[], title: string, template: any)
             })
         }
 
-        // --- Title ---
         const titleX = styles.contentSlide.accentPosition === 'left' ? 1.7 : 0.5
         const titleY = styles.contentSlide.accentPosition === 'top' ? 0.7 : 0.5
 
@@ -176,37 +170,34 @@ async function generateDesignerPPTX(slides: any[], title: string, template: any)
             fontFace: 'Arial', valign: 'middle',
         })
 
-        // Accent underline
         s.addShape(pptx.ShapeType.rect, {
             x: titleX, y: titleY + 0.9, w: 1.8, h: 0.06,
             fill: { color: colors.accent },
+            line: { color: colors.accent },
         })
 
-        // --- Content Area (split if image exists) ---
         const contentWidth = hasImage ? 6.2 : 11
         const contentX = titleX
 
-        // --- Image (right side) ---
+        // Image
         if (hasImage) {
             try {
+                // Frame WITHOUT transparency
+                s.addShape(pptx.ShapeType.rect, {
+                    x: 7.4, y: 2.1, w: 5.5, h: 4.2,
+                    fill: { color: colors.cardBg },
+                    line: { color: colors.accent, width: 1 },
+                })
                 s.addImage({
                     data: slide.image,
                     x: 7.5, y: 2.2, w: 5.3, h: 4,
-                    sizing: { type: 'contain', w: 5.3, h: 4 },
-                })
-                // Decorative frame behind image
-                s.addShape(pptx.ShapeType.rect, {
-                    x: 7.4, y: 2.1, w: 5.5, h: 4.2,
-                    fill: { color: colors.accent, transparency: 90 },
-                    line: { color: colors.accent, width: 1 },
-                    rectRadius: 8,
                 })
             } catch (e) {
                 console.warn('Image render failed:', e)
             }
         }
 
-        // --- Bullets ---
+        // Bullets
         const bullets = slide.bullets || ['No content']
         const bulletStyle = styles.contentSlide.bulletStyle
         let prefixChar = '• '
@@ -216,7 +207,6 @@ async function generateDesignerPPTX(slides: any[], title: string, template: any)
         let yPos = 2.2
         bullets.forEach((bullet: string, i: number) => {
             if (i > 7) return
-
             const prefix = bulletStyle === 'number' ? `${i + 1}. ` : prefixChar
             const textWidth = contentWidth - 0.5
 
@@ -243,48 +233,34 @@ async function generateDesignerPPTX(slides: any[], title: string, template: any)
             yPos += 0.65
         })
 
-        // --- Key Takeaway ---
+        // Key Takeaway (WITHOUT transparency, WITHOUT emoji)
         if (slide.key_takeaway) {
             const takeawayY = Math.min(yPos + 0.3, 6.3)
             const takeawayWidth = hasImage ? 6.2 : 12.33
             s.addShape(pptx.ShapeType.rect, {
                 x: contentX, y: takeawayY, w: takeawayWidth, h: 0.7,
-                fill: { color: colors.accent, transparency: 88 },
+                fill: { color: 'FEF3C7' },
                 line: { color: colors.accent, width: 0.5 },
-                rectRadius: 4,
             })
-            s.addText(`💡  ${clean(slide.key_takeaway)}`, {
+            s.addText(`Tip: ${clean(slide.key_takeaway)}`, {
                 x: contentX + 0.2, y: takeawayY, w: takeawayWidth - 0.4, h: 0.7,
-                fontSize: 12, color: colors.text, italic: true,
+                fontSize: 12, color: '92400E', italic: true,
                 valign: 'middle', fontFace: 'Arial',
             })
         }
 
-        // --- Slide number (bottom right) ---
         s.addText(`${idx + 1} / ${slides.length}`, {
             x: 11.5, y: 7, w: 1.5, h: 0.4,
-            fontSize: 11, color: '#9CA3AF',
+            fontSize: 11, color: '9CA3AF',
             align: 'right', fontFace: 'Arial',
         })
     })
 
     // ============================================================
-    // END SLIDE
+    // END SLIDE (WITHOUT transparency)
     // ============================================================
     const endSlide = pptx.addSlide()
     endSlide.background = { color: colors.accent }
-
-    // Decorative circles
-    endSlide.addShape(pptx.ShapeType.ellipse, {
-        x: -1, y: -1, w: 5, h: 5,
-        fill: { color: 'FFFFFF', transparency: 85 },
-        line: { color: 'FFFFFF', transparency: 85 },
-    })
-    endSlide.addShape(pptx.ShapeType.ellipse, {
-        x: 10, y: 4, w: 4, h: 4,
-        fill: { color: 'FFFFFF', transparency: 85 },
-        line: { color: 'FFFFFF', transparency: 85 },
-    })
 
     endSlide.addText('Thank You', {
         x: 0.5, y: 2.5, w: 12.33, h: 1.5,
