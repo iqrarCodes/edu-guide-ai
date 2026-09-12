@@ -6,9 +6,20 @@ export type TemplateId =
     | 'pitch' | 'report' | 'strategy' | 'analysis'
     | 'product' | 'ux' | 'saas' | 'corrective'
 
+// ✅ 12 DISTINCT layouts
 export type LayoutType =
-    | 'left-bar' | 'top-banner' | 'big-circles' | 'sidebar'
-    | 'hero-center' | 'blocks' | 'numbered' | 'split'
+    | 'left-bar'       // Thin left bar + badge
+    | 'top-banner'     // Full top banner
+    | 'big-circles'    // Playful circles background
+    | 'sidebar'        // 28% colored sidebar
+    | 'hero-center'    // Big hero center
+    | 'blocks'         // Each bullet in card
+    | 'numbered'       // Huge numbers + text
+    | 'split'          // 40/60 split
+    | 'magazine'       // Editorial magazine
+    | 'timeline'       // Horizontal timeline
+    | 'grid-2x2'       // 2x2 grid cards
+    | 'quote-focus'    // Big centered quote
 
 export interface TemplateDefinition {
     id: TemplateId
@@ -26,7 +37,7 @@ export interface TemplateDefinition {
         contentSlide: {
             bulletStyle: 'arrow' | 'check' | 'number' | 'dot' | 'square'
             accentPosition: 'left' | 'top' | 'none' | 'sidebar'
-            alignment: 'left' | 'justify' | 'center'   // ✅ 'center' added
+            alignment: 'left' | 'justify' | 'center'
         }
         colors: {
             primary: string
@@ -43,8 +54,8 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
     modern: {
         id: 'modern',
         name: 'Modern',
-        description: 'Clean left-bar with number badge',
-        icon: '',
+        description: 'Thin left bar with circular badge',
+        icon: '✨',
         layout: 'left-bar',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 44, subtitleFontSize: 20, decoration: 'bar' },
@@ -55,8 +66,8 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
     corporate: {
         id: 'corporate',
         name: 'Corporate',
-        description: 'Top banner, formal & bold',
-        icon: '',
+        description: 'Full-width top banner header',
+        icon: '💼',
         layout: 'top-banner',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 40, subtitleFontSize: 18, decoration: 'bar' },
@@ -67,8 +78,8 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
     creative: {
         id: 'creative',
         name: 'Creative',
-        description: 'Bold colors, overlapping circles',
-        icon: '',
+        description: 'Playful circles with rounded card',
+        icon: '🎨',
         layout: 'big-circles',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 48, subtitleFontSize: 22, decoration: 'circle' },
@@ -79,8 +90,8 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
     academic: {
         id: 'academic',
         name: 'Academic',
-        description: 'Classic numbered layout',
-        icon: '',
+        description: 'Huge numbers with text (publication style)',
+        icon: '📚',
         layout: 'numbered',
         styles: {
             titleSlide: { alignment: 'left', titleFontSize: 36, subtitleFontSize: 18, decoration: 'none' },
@@ -91,8 +102,8 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
     thesis: {
         id: 'thesis',
         name: 'Thesis Defense',
-        description: 'Sidebar layout with title strip',
-        icon: '',
+        description: 'Colored sidebar with huge number',
+        icon: '🎓',
         layout: 'sidebar',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 44, subtitleFontSize: 20, decoration: 'block' },
@@ -103,9 +114,9 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
     mckinsey: {
         id: 'mckinsey',
         name: 'McKinsey Report',
-        description: 'Tight grid consulting style',
-        icon: '',
-        layout: 'split',
+        description: 'Editorial magazine grid',
+        icon: '📊',
+        layout: 'magazine',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 40, subtitleFontSize: 18, decoration: 'bar' },
             contentSlide: { bulletStyle: 'dot', accentPosition: 'none', alignment: 'justify' },
@@ -115,9 +126,9 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
     social: {
         id: 'social',
         name: 'Social Media',
-        description: 'Vibrant block layout',
-        icon: '',
-        layout: 'blocks',
+        description: '2x2 grid of feature cards',
+        icon: '📱',
+        layout: 'grid-2x2',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 46, subtitleFontSize: 20, decoration: 'circle' },
             contentSlide: { bulletStyle: 'arrow', accentPosition: 'none', alignment: 'left' },
@@ -127,21 +138,21 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
     startup: {
         id: 'startup',
         name: 'Startup Pitch',
-        description: 'Big hero center design',
-        icon: '',
+        description: 'Bold hero header with stats',
+        icon: '🚀',
         layout: 'hero-center',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 52, subtitleFontSize: 22, decoration: 'block' },
-            contentSlide: { bulletStyle: 'arrow', accentPosition: 'none', alignment: 'center' },  // ✅ Now valid
+            contentSlide: { bulletStyle: 'arrow', accentPosition: 'none', alignment: 'center' },
             colors: { primary: 'F97316', secondary: 'FB923C', bg: 'FFF7ED', text: '431407', accent: 'F97316', cardBg: 'FFFFFF' },
         },
     },
     pitch: {
         id: 'pitch',
         name: 'Pitch Deck',
-        description: 'Hero with left title bar',
-        icon: '',
-        layout: 'hero-center',
+        description: 'Timeline-style progression',
+        icon: '📈',
+        layout: 'timeline',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 50, subtitleFontSize: 20, decoration: 'block' },
             contentSlide: { bulletStyle: 'check', accentPosition: 'left', alignment: 'left' },
@@ -151,8 +162,8 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
     report: {
         id: 'report',
         name: 'Business Report',
-        description: 'Split content with accents',
-        icon: '',
+        description: '40/60 split with title panel',
+        icon: '📋',
         layout: 'split',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 40, subtitleFontSize: 18, decoration: 'bar' },
@@ -163,8 +174,8 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
     strategy: {
         id: 'strategy',
         name: 'Strategy Deck',
-        description: 'Numbered strategic steps',
-        icon: '',
+        description: 'Numbered strategy with big digits',
+        icon: '🎯',
         layout: 'numbered',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 44, subtitleFontSize: 20, decoration: 'circle' },
@@ -175,8 +186,8 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
     analysis: {
         id: 'analysis',
         name: 'Data Analysis',
-        description: 'Sidebar data layout',
-        icon: '',
+        description: 'Sidebar with analytics focus',
+        icon: '📉',
         layout: 'sidebar',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 44, subtitleFontSize: 20, decoration: 'bar' },
@@ -187,8 +198,8 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
     product: {
         id: 'product',
         name: 'Product Launch',
-        description: 'Block cards layout',
-        icon: '',
+        description: 'Each feature in its own card',
+        icon: '🎁',
         layout: 'blocks',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 48, subtitleFontSize: 22, decoration: 'circle' },
@@ -199,9 +210,9 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
     ux: {
         id: 'ux',
         name: 'UX Design',
-        description: 'Left-bar minimal style',
-        icon: '',
-        layout: 'left-bar',
+        description: 'Magazine editorial style',
+        icon: '🎨',
+        layout: 'magazine',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 44, subtitleFontSize: 20, decoration: 'block' },
             contentSlide: { bulletStyle: 'dot', accentPosition: 'left', alignment: 'left' },
@@ -211,9 +222,9 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
     saas: {
         id: 'saas',
         name: 'SaaS GTM',
-        description: 'Block layout with header strip',
-        icon: '',
-        layout: 'blocks',
+        description: 'Timeline of market strategy',
+        icon: '☁️',
+        layout: 'timeline',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 46, subtitleFontSize: 20, decoration: 'block' },
             contentSlide: { bulletStyle: 'check', accentPosition: 'top', alignment: 'left' },
@@ -223,9 +234,9 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
     corrective: {
         id: 'corrective',
         name: 'Corrective Action',
-        description: 'Split plan layout',
-        icon: '',
-        layout: 'split',
+        description: 'Grid of action items',
+        icon: '🛠️',
+        layout: 'grid-2x2',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 40, subtitleFontSize: 18, decoration: 'bar' },
             contentSlide: { bulletStyle: 'number', accentPosition: 'top', alignment: 'left' },
