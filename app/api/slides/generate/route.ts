@@ -3,7 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import Groq from 'groq-sdk'
 import { SLIDE_TEMPLATES, TemplateId } from '@/lib/slide-templates'
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! })
+// ✅ Use the dedicated Slides API key
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY_SLIDES })
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -11,7 +12,7 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
-  const { project_id, topic, num_slides, style, audience, mode, outline, templateId = 'modern' } = body
+  const { project_id, topic, num_slides, style, audience, mode, templateId = 'modern' } = body
 
   if (!topic || !num_slides) {
     return NextResponse.json({ error: 'Topic and num_slides required' }, { status: 400 })
@@ -19,57 +20,56 @@ export async function POST(request: Request) {
 
   const template = SLIDE_TEMPLATES[templateId as TemplateId] || SLIDE_TEMPLATES.modern
 
-  const prompt = `
-You are an expert presentation designer. Generate exactly ${num_slides} slides about "${topic}" for audience "${audience}" in "${mode}" mode.
+  const prompt = `Create a detailed presentation on "${topic}".
+Audience: ${audience || 'General'}
+Mode: ${mode || 'Educational'}
+Total slides: EXACTLY ${num_slides}
 
-Each slide MUST have a "type" field chosen from this list:
-- "content" → normal bullet points (most common)
-- "chart" → when data/numbers/comparisons can be visualized
-- "stats" → when highlighting 2-4 key metrics/numbers
-- "process" → when explaining step-by-step steps (max 5 steps)
-- "comparison" → when comparing two things side-by-side
-- "quote" → when a strong statement/quote is needed
-- "icon-grid" → when listing 4-6 short items with icons
+═══════════════════════════════════════════════════
+⚠️  STRICT CONTENT RULES (READ CAREFULLY)
+═══════════════════════════════════════════════════
 
-Choose the BEST type for each slide content. Use variety - do NOT make all slides the same type.
+RULE 1: EVERY bullet MUST be 25-40 words (2-3 full sentences).
+  ❌ FORBIDDEN: "Personalized learning"
+  ❌ FORBIDDEN: "AI tutors help students"
+  ✅ REQUIRED: "AI-powered tutoring systems analyze each student's response patterns to identify knowledge gaps, then automatically adjust the difficulty level and provide targeted practice exercises that address the specific weakness, resulting in 40% faster skill acquisition."
 
-Return ONLY a JSON array with this structure (fields depend on type):
+RULE 2: EVERY content slide MUST have EXACTLY 5 bullets.
 
-For "content":
-{"type":"content", "title":"...", "bullets":["...","..."], "key_takeaway":"..."}
+RULE 3: Each bullet MUST include: WHAT, WHY/HOW, and a specific example/number.
 
-For "chart":
-{"type":"chart", "title":"...", "chartType":"bar|pie|line|doughnut", "chartData":[{"label":"A","value":30},{"label":"B","value":70}], "key_takeaway":"..."}
+RULE 4: NO generic phrases. Every sentence must add new information.
 
-For "stats":
-{"type":"stats", "title":"...", "stats":[{"value":"95%","label":"Accuracy"},{"value":"10K+","label":"Users"}], "key_takeaway":"..."}
+RULE 5: Include REAL data/numbers/percentages wherever possible.
 
-For "process":
-{"type":"process", "title":"...", "steps":["Step 1","Step 2","Step 3"], "key_takeaway":"..."}
+═══════════════════════════════════════════════════
+SLIDE TYPES (use variety)
+═══════════════════════════════════════════════════
 
-For "comparison":
-{"type":"comparison", "title":"...", "leftTitle":"Option A","leftItems":["...","..."], "rightTitle":"Option B","rightItems":["...","..."], "key_takeaway":"..."}
+1. "content" → 5 bullets (25-40 words each), title, key_takeaway
+2. "stats" → 4 stats [{value, label}]
+3. "chart" → chartType (bar/pie/line/doughnut), chartData with 6 items [{label, value}]
+4. "process" → 5 steps (each 20-35 words)
+5. "comparison" → leftTitle, leftItems [5], rightTitle, rightItems [5]
+6. "quote" → quote (20-35 words), author
+7. "icon-grid" → 6 items [{icon: "★", label: "3-6 word concept"}]
 
-For "quote":
-{"type":"quote", "title":"...", "quote":"The actual quote text here", "author":"Author Name", "key_takeaway":"..."}
+═══════════════════════════════════════════════════
+OUTPUT: JSON ARRAY ONLY (No markdown, no explanation)
+═══════════════════════════════════════════════════
 
-For "icon-grid":
-{"type":"icon-grid", "title":"...", "items":[{"icon":"★","label":"Item 1"},{"icon":"●","label":"Item 2"},{"icon":"◆","label":"Item 3"},{"icon":"▲","label":"Item 4"}], "key_takeaway":"..."}
+NOW GENERATE EXACTLY ${num_slides} SLIDES FOR "${topic}".
 
-CRITICAL RULES:
-- Return ONLY valid JSON array. NO markdown, NO backticks.
-- Every slide MUST have "type" and "title" and "key_takeaway".
-- Use variety in slide types.
-- Keep titles short (max 10 words).
-- Keep bullets/items short (max 20 words each).
-`
+CRITICAL: Every content bullet MUST be 25-40 words. Non-negotiable.`
 
   const models = [
-    { name: 'openai/gpt-oss-20b', maxTokens: 6000 },
-    { name: 'qwen/qwen3.6-27b', maxTokens: 6000 },
+    { name: 'qwen/qwen3.6-27b', maxTokens: 8000 },
+    { name: 'openai/gpt-oss-120b', maxTokens: 8000 },
+    { name: 'openai/gpt-oss-20b', maxTokens: 8000 },
   ]
 
   let raw = ''
+  let usedModel = ''
 
   for (const model of models) {
     try {
@@ -77,15 +77,19 @@ CRITICAL RULES:
       const response = await groq.chat.completions.create({
         model: model.name,
         messages: [
-          { role: 'system', content: 'You are a JSON generator. Return ONLY a valid JSON array. No markdown.' },
+          {
+            role: 'system',
+            content: 'You are an expert presentation writer. Write detailed, explanatory bullets of 25-40 words each. Return ONLY valid JSON arrays.'
+          },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.6,
+        temperature: 0.4,
         max_tokens: model.maxTokens,
       })
       raw = response.choices[0].message.content || ''
-      if (raw && raw.trim().length > 10) {
+      if (raw && raw.trim().length > 500) {
         console.log(`✅ ${model.name} returned ${raw.length} chars`)
+        usedModel = model.name
         break
       }
     } catch (error: any) {
@@ -94,15 +98,21 @@ CRITICAL RULES:
   }
 
   // Fallback
-  if (!raw || raw.trim().length < 10) {
+  if (!raw || raw.trim().length < 500) {
     console.warn('All models failed, using fallback.')
     const fallbackSlides = []
     for (let i = 0; i < num_slides; i++) {
       fallbackSlides.push({
         type: 'content',
-        title: `Slide ${i + 1}`,
-        bullets: [`Key point ${i + 1}.1`, `Key point ${i + 1}.2`, `Key point ${i + 1}.3`],
-        key_takeaway: `Takeaway for slide ${i + 1}`,
+        title: `${topic} - Part ${i + 1}`,
+        bullets: [
+          `This section explores the first critical aspect of ${topic}, explaining why it matters in today's context and how it impacts the broader landscape.`,
+          `The second key point provides concrete evidence and real-world examples demonstrating the practical applications and measurable outcomes observed in recent studies.`,
+          `Third, we examine the underlying mechanisms and processes that drive these developments, offering insights into how organizations can effectively leverage them.`,
+          `Furthermore, this analysis considers the potential challenges and limitations, providing a balanced perspective on what to expect in the coming years.`,
+          `Finally, we look at future trends and predictions, with specific data points suggesting significant growth ahead for ${topic}.`,
+        ],
+        key_takeaway: `Understanding these aspects of ${topic} is essential for making informed decisions in the modern landscape.`,
       })
     }
     return NextResponse.json({ slides: fallbackSlides, templateId }, { status: 200 })
@@ -116,8 +126,13 @@ CRITICAL RULES:
     cleaned = cleaned.replace(/`/g, '')
 
     const arrayMatch = cleaned.match(/\[[\s\S]*\]/)
-    const objectMatch = cleaned.match(/\{[\s\S]*\}/)
-    let jsonStr = arrayMatch ? arrayMatch[0] : (objectMatch ? objectMatch[0] : '')
+    let jsonStr = ''
+    if (arrayMatch) {
+      jsonStr = arrayMatch[0]
+    } else {
+      const objectMatch = cleaned.match(/\{[\s\S]*\}/)
+      jsonStr = objectMatch ? objectMatch[0] : ''
+    }
 
     if (!jsonStr) throw new Error('No JSON found')
 
@@ -133,17 +148,23 @@ CRITICAL RULES:
     for (let i = 0; i < num_slides; i++) {
       slides.push({
         type: 'content',
-        title: `Slide ${i + 1}`,
-        bullets: [`Key point ${i + 1}.1`, `Key point ${i + 1}.2`],
-        key_takeaway: `Takeaway ${i + 1}`,
+        title: `${topic} - Slide ${i + 1}`,
+        bullets: [
+          `Detailed explanation of the first key aspect with proper context and reasoning that helps understand the topic better.`,
+          `Second important point that provides additional value and insight to the audience with real examples.`,
+          `Third aspect exploring the practical applications and how it impacts real-world scenarios.`,
+          `Fourth point covering the implications and what it means for the future.`,
+          `Fifth point summarizing the overall significance with concrete data.`,
+        ],
+        key_takeaway: `Key insight about this aspect of ${topic}.`,
       })
     }
   }
 
-  // Ensure every slide has type + title + key_takeaway
+  // Normalize slides
   slides = slides.map((slide: any, idx: number) => ({
     type: slide.type || 'content',
-    title: slide.title || `Slide ${idx + 1}`,
+    title: slide.title || `${topic} - ${idx + 1}`,
     bullets: Array.isArray(slide.bullets) ? slide.bullets : [],
     steps: Array.isArray(slide.steps) ? slide.steps : [],
     stats: Array.isArray(slide.stats) ? slide.stats : [],
@@ -161,7 +182,14 @@ CRITICAL RULES:
 
   if (slides.length > num_slides) slides = slides.slice(0, num_slides)
 
-  // Save to DB
+  while (slides.length < num_slides) {
+    const extra = slides.find((s: any) => s.type === 'content') || slides[0]
+    slides.push({
+      ...extra,
+      title: `${topic} - Additional Point ${slides.length + 1}`,
+    })
+  }
+
   if (project_id) {
     await supabase
       .from('slides_data')
@@ -173,5 +201,6 @@ CRITICAL RULES:
     slides,
     templateId,
     templateName: template.name,
+    usedModel,
   })
 }
