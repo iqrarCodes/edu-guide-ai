@@ -3,8 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import Groq from 'groq-sdk'
 import { SLIDE_TEMPLATES, TemplateId } from '@/lib/slide-templates'
 
-// ✅ Use the dedicated Slides API key
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY_SLIDES })
+// ✅ Dedicated Slides API key (different from outline)
+const slidesGroq = new Groq({ apiKey: process.env.GROQ_API_KEY_SLIDES })
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -12,60 +12,102 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
-  const { project_id, topic, num_slides, style, audience, mode, templateId = 'modern' } = body
+  const { project_id, topic, outline, audience, mode, style, templateId = 'modern' } = body
 
-  if (!topic || !num_slides) {
-    return NextResponse.json({ error: 'Topic and num_slides required' }, { status: 400 })
+  if (!topic || !outline || !Array.isArray(outline) || outline.length === 0) {
+    return NextResponse.json({ error: 'Topic and outline required' }, { status: 400 })
   }
 
   const template = SLIDE_TEMPLATES[templateId as TemplateId] || SLIDE_TEMPLATES.modern
 
-  const prompt = `Create a detailed presentation on "${topic}".
+  // Build outline context for AI
+  const outlineContext = outline
+    .map((item: any, i: number) => `${i + 1}. "${item.title}" — ${item.description}`)
+    .join('\n')
+
+  const prompt = `You are an expert presentation writer. Write slides that EXACTLY MATCH the given outline.
+
+═══════════════════════════════════════════════════
+PRESENTATION CONTEXT
+═══════════════════════════════════════════════════
+
+Topic: "${topic}"
 Audience: ${audience || 'General'}
 Mode: ${mode || 'Educational'}
-Total slides: EXACTLY ${num_slides}
+Style: ${style || 'Educational'}
+Total slides: EXACTLY ${outline.length}
 
 ═══════════════════════════════════════════════════
-⚠️  STRICT CONTENT RULES (READ CAREFULLY)
+THE OUTLINE (each slide MUST match one section)
 ═══════════════════════════════════════════════════
 
-RULE 1: EVERY bullet MUST be 25-40 words (2-3 full sentences).
-  ❌ FORBIDDEN: "Personalized learning"
-  ❌ FORBIDDEN: "AI tutors help students"
-  ✅ REQUIRED: "AI-powered tutoring systems analyze each student's response patterns to identify knowledge gaps, then automatically adjust the difficulty level and provide targeted practice exercises that address the specific weakness, resulting in 40% faster skill acquisition."
-
-RULE 2: EVERY content slide MUST have EXACTLY 5 bullets.
-
-RULE 3: Each bullet MUST include: WHAT, WHY/HOW, and a specific example/number.
-
-RULE 4: NO generic phrases. Every sentence must add new information.
-
-RULE 5: Include REAL data/numbers/percentages wherever possible.
+${outlineContext}
 
 ═══════════════════════════════════════════════════
-SLIDE TYPES (use variety)
+CRITICAL RULES
 ═══════════════════════════════════════════════════
 
-1. "content" → 5 bullets (25-40 words each), title, key_takeaway
-2. "stats" → 4 stats [{value, label}]
-3. "chart" → chartType (bar/pie/line/doughnut), chartData with 6 items [{label, value}]
-4. "process" → 5 steps (each 20-35 words)
-5. "comparison" → leftTitle, leftItems [5], rightTitle, rightItems [5]
-6. "quote" → quote (20-35 words), author
-7. "icon-grid" → 6 items [{icon: "★", label: "3-6 word concept"}]
+RULE 1: Generate EXACTLY ${outline.length} slides — one slide per outline section.
+  - Slide 1 = Section 1 ("${outline[0]?.title}")
+  - Slide 2 = Section 2 ("${outline[1]?.title || ''}")
+  - ... and so on.
+
+RULE 2: Each slide's TITLE must be the outline section's title.
+   Do NOT invent new titles. Use the EXACT outline title.
+
+RULE 3: Each slide's CONTENT must address the outline section's DESCRIPTION.
+   The bullets should expand on what the description says.
+
+RULE 4: EVERY content bullet MUST be 25-40 words (2-3 sentences).
+  ❌ BAD: "Personalized learning"
+  ✅ GOOD: "AI-powered tutoring systems analyze student response patterns to identify specific knowledge gaps, then automatically adjust difficulty levels and provide targeted practice exercises, resulting in 40% faster skill acquisition according to Stanford research."
+
+RULE 5: EVERY content slide MUST have 5 detailed bullets.
+   Each bullet includes: WHAT, WHY/HOW, and a specific example/number.
+
+RULE 6: Slide type should MATCH the section content:
+   - Use "content" for most sections (bullets)
+   - Use "stats" if section is about numbers/metrics
+   - Use "chart" if section compares data
+   - Use "process" if section is about steps/flow
+   - Use "comparison" if section compares two things
+   - Use "quote" if section is about a concept/idea
+   - Use "icon-grid" if section lists 4-6 items
 
 ═══════════════════════════════════════════════════
-OUTPUT: JSON ARRAY ONLY (No markdown, no explanation)
+OUTPUT FORMAT
 ═══════════════════════════════════════════════════
 
-NOW GENERATE EXACTLY ${num_slides} SLIDES FOR "${topic}".
+Return ONLY a valid JSON array with EXACTLY ${outline.length} items.
 
-CRITICAL: Every content bullet MUST be 25-40 words. Non-negotiable.`
+For "content" slide:
+{"type":"content","title":"EXACT_OUTLINE_TITLE","bullets":["25-40 word bullet 1","bullet 2","bullet 3","bullet 4","bullet 5"],"key_takeaway":"One-sentence summary (20-30 words)."}
+
+For "stats" slide:
+{"type":"stats","title":"EXACT_OUTLINE_TITLE","stats":[{"value":"85%","label":"detailed 6-10 word label"},{"value":"10K+","label":"..."},{"value":"3.5h","label":"..."},{"value":"$6.5B","label":"..."}],"key_takeaway":"..."}
+
+For "chart" slide:
+{"type":"chart","title":"EXACT_OUTLINE_TITLE","chartType":"bar","chartData":[{"label":"...","value":45},{"label":"...","value":72},...6 items],"key_takeaway":"..."}
+
+For "process" slide:
+{"type":"process","title":"EXACT_OUTLINE_TITLE","steps":["Detailed 25-35 word step 1","step 2","step 3","step 4","step 5"],"key_takeaway":"..."}
+
+For "comparison" slide:
+{"type":"comparison","title":"EXACT_OUTLINE_TITLE","leftTitle":"Option A","leftItems":["25-word bullet","...5 total"],"rightTitle":"Option B","rightItems":["25-word bullet","...5 total"],"key_takeaway":"..."}
+
+For "quote" slide:
+{"type":"quote","title":"EXACT_OUTLINE_TITLE","quote":"A powerful 20-35 word statement related to the outline section","author":"Author name or 'Expert Insight'","key_takeaway":"..."}
+
+For "icon-grid" slide:
+{"type":"icon-grid","title":"EXACT_OUTLINE_TITLE","items":[{"icon":"★","label":"3-6 word concept"},...6 total],"key_takeaway":"..."}
+
+NOW GENERATE ${outline.length} SLIDES. Every slide must EXACTLY match its outline section.
+Return ONLY the JSON array. No markdown. No explanation.`
 
   const models = [
-    { name: 'qwen/qwen3.6-27b', maxTokens: 8000 },
     { name: 'openai/gpt-oss-120b', maxTokens: 8000 },
     { name: 'openai/gpt-oss-20b', maxTokens: 8000 },
+    { name: 'qwen/qwen3.6-27b', maxTokens: 8000 },
   ]
 
   let raw = ''
@@ -74,16 +116,16 @@ CRITICAL: Every content bullet MUST be 25-40 words. Non-negotiable.`
   for (const model of models) {
     try {
       console.log(`🔄 Trying ${model.name}...`)
-      const response = await groq.chat.completions.create({
+      const response = await slidesGroq.chat.completions.create({
         model: model.name,
         messages: [
           {
             role: 'system',
-            content: 'You are an expert presentation writer. Write detailed, explanatory bullets of 25-40 words each. Return ONLY valid JSON arrays.'
+            content: 'You are an expert presentation writer. Follow the outline EXACTLY. Write detailed bullets of 25-40 words. Return ONLY valid JSON arrays.'
           },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.4,
+        temperature: 0.5,
         max_tokens: model.maxTokens,
       })
       raw = response.choices[0].message.content || ''
@@ -97,99 +139,89 @@ CRITICAL: Every content bullet MUST be 25-40 words. Non-negotiable.`
     }
   }
 
-  // Fallback
+  // Fallback: Generate basic slides from outline
   if (!raw || raw.trim().length < 500) {
-    console.warn('All models failed, using fallback.')
-    const fallbackSlides = []
-    for (let i = 0; i < num_slides; i++) {
-      fallbackSlides.push({
-        type: 'content',
-        title: `${topic} - Part ${i + 1}`,
-        bullets: [
-          `This section explores the first critical aspect of ${topic}, explaining why it matters in today's context and how it impacts the broader landscape.`,
-          `The second key point provides concrete evidence and real-world examples demonstrating the practical applications and measurable outcomes observed in recent studies.`,
-          `Third, we examine the underlying mechanisms and processes that drive these developments, offering insights into how organizations can effectively leverage them.`,
-          `Furthermore, this analysis considers the potential challenges and limitations, providing a balanced perspective on what to expect in the coming years.`,
-          `Finally, we look at future trends and predictions, with specific data points suggesting significant growth ahead for ${topic}.`,
-        ],
-        key_takeaway: `Understanding these aspects of ${topic} is essential for making informed decisions in the modern landscape.`,
-      })
-    }
+    console.warn('All models failed, using outline-based fallback.')
+    const fallbackSlides = outline.map((item: any, i: number) => ({
+      type: 'content',
+      title: item.title,
+      bullets: [
+        `Detailed explanation of the first key point about "${item.title}" with proper context and specific examples.`,
+        `Second important aspect with supporting data and real-world applications of this concept.`,
+        `Third point exploring the mechanisms and underlying processes that make this work.`,
+        `Fourth aspect covering implications, benefits, and how this impacts the broader field.`,
+        `Fifth point discussing challenges, limitations, and what the future holds.`,
+      ],
+      key_takeaway: `Understanding ${item.title} is essential for a complete picture of ${topic}.`,
+    }))
     return NextResponse.json({ slides: fallbackSlides, templateId }, { status: 200 })
   }
 
   // Parse JSON
   let slides: any[] = []
   try {
-    let cleaned = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '')
-    cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/g, '').trim()
-    cleaned = cleaned.replace(/`/g, '')
-
-    const arrayMatch = cleaned.match(/\[[\s\S]*\]/)
-    let jsonStr = ''
-    if (arrayMatch) {
-      jsonStr = arrayMatch[0]
-    } else {
-      const objectMatch = cleaned.match(/\{[\s\S]*\}/)
-      jsonStr = objectMatch ? objectMatch[0] : ''
-    }
-
-    if (!jsonStr) throw new Error('No JSON found')
-
-    let parsed = JSON.parse(jsonStr)
-    if (!Array.isArray(parsed)) {
-      slides = parsed.slides && Array.isArray(parsed.slides) ? parsed.slides : [parsed]
-    } else {
-      slides = parsed
-    }
+    let cleaned = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').replace(/`/g, '').replace(/<think>[\s\S]*?<\/think>/g, '').trim()
+    const match = cleaned.match(/\[[\s\S]*\]/)
+    if (!match) throw new Error('No JSON array found')
+    let parsed = JSON.parse(match[0])
+    slides = Array.isArray(parsed) ? parsed : [parsed]
   } catch (parseError) {
     console.error('Parse error:', parseError)
-    slides = []
-    for (let i = 0; i < num_slides; i++) {
-      slides.push({
-        type: 'content',
-        title: `${topic} - Slide ${i + 1}`,
-        bullets: [
-          `Detailed explanation of the first key aspect with proper context and reasoning that helps understand the topic better.`,
-          `Second important point that provides additional value and insight to the audience with real examples.`,
-          `Third aspect exploring the practical applications and how it impacts real-world scenarios.`,
-          `Fourth point covering the implications and what it means for the future.`,
-          `Fifth point summarizing the overall significance with concrete data.`,
-        ],
-        key_takeaway: `Key insight about this aspect of ${topic}.`,
-      })
-    }
+    slides = outline.map((item: any) => ({
+      type: 'content',
+      title: item.title,
+      bullets: [
+        `Comprehensive explanation of ${item.title} with context and examples.`,
+        `Second detailed point expanding on the concepts discussed in this section.`,
+        `Third aspect providing additional value and practical applications.`,
+        `Fourth point discussing implications and impact of this topic.`,
+        `Fifth point summarizing key insights and takeaways.`,
+      ],
+      key_takeaway: `Key insights about ${item.title}.`,
+    }))
   }
 
-  // Normalize slides
-  slides = slides.map((slide: any, idx: number) => ({
-    type: slide.type || 'content',
-    title: slide.title || `${topic} - ${idx + 1}`,
-    bullets: Array.isArray(slide.bullets) ? slide.bullets : [],
-    steps: Array.isArray(slide.steps) ? slide.steps : [],
-    stats: Array.isArray(slide.stats) ? slide.stats : [],
-    chartType: slide.chartType || 'bar',
-    chartData: Array.isArray(slide.chartData) ? slide.chartData : [],
-    leftTitle: slide.leftTitle || '',
-    leftItems: Array.isArray(slide.leftItems) ? slide.leftItems : [],
-    rightTitle: slide.rightTitle || '',
-    rightItems: Array.isArray(slide.rightItems) ? slide.rightItems : [],
-    quote: slide.quote || '',
-    author: slide.author || '',
-    items: Array.isArray(slide.items) ? slide.items : [],
-    key_takeaway: slide.key_takeaway || '',
-  }))
+  // Ensure slides match outline count
+  slides = slides.map((slide: any, idx: number) => {
+    const outlineItem = outline[idx] || {}
+    return {
+      type: slide.type || 'content',
+      title: slide.title || outlineItem.title || `Slide ${idx + 1}`,
+      bullets: Array.isArray(slide.bullets) ? slide.bullets : [],
+      steps: Array.isArray(slide.steps) ? slide.steps : [],
+      stats: Array.isArray(slide.stats) ? slide.stats : [],
+      chartType: slide.chartType || 'bar',
+      chartData: Array.isArray(slide.chartData) ? slide.chartData : [],
+      leftTitle: slide.leftTitle || '',
+      leftItems: Array.isArray(slide.leftItems) ? slide.leftItems : [],
+      rightTitle: slide.rightTitle || '',
+      rightItems: Array.isArray(slide.rightItems) ? slide.rightItems : [],
+      quote: slide.quote || '',
+      author: slide.author || '',
+      items: Array.isArray(slide.items) ? slide.items : [],
+      key_takeaway: slide.key_takeaway || '',
+    }
+  })
 
-  if (slides.length > num_slides) slides = slides.slice(0, num_slides)
-
-  while (slides.length < num_slides) {
-    const extra = slides.find((s: any) => s.type === 'content') || slides[0]
+  // Ensure exact count
+  slides = slides.slice(0, outline.length)
+  while (slides.length < outline.length) {
+    const item = outline[slides.length]
     slides.push({
-      ...extra,
-      title: `${topic} - Additional Point ${slides.length + 1}`,
+      type: 'content',
+      title: item.title,
+      bullets: [
+        `Detailed explanation of the key aspects of ${item.title}.`,
+        `Important supporting information with real-world context.`,
+        `Additional insights expanding on the concepts discussed.`,
+        `Practical applications and implications of this topic.`,
+        `Summary of key takeaways and significance.`,
+      ],
+      key_takeaway: `Understanding ${item.title} is crucial for this presentation.`,
     })
   }
 
+  // Save to DB
   if (project_id) {
     await supabase
       .from('slides_data')

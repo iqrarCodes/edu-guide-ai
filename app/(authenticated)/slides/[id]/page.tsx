@@ -7,7 +7,7 @@ import { SLIDE_TEMPLATES, TemplateId } from '@/lib/slide-templates'
 import ImageUpload from '@/components/ImageUpload'
 import {
     ArrowLeft, Sparkles, FileText, Layers, Download, Loader2,
-    CheckCircle, Zap, AlertCircle, Eye, X
+    CheckCircle, Zap, AlertCircle, Eye, X, Plus, Trash2
 } from 'lucide-react'
 
 export default function SlidesEditor() {
@@ -26,7 +26,7 @@ export default function SlidesEditor() {
     const [audience, setAudience] = useState('General')
     const [mode, setMode] = useState('Educational')
     const [style, setStyle] = useState('Educational')
-    const [numSlides, setNumSlides] = useState(5)
+    const [numSlides, setNumSlides] = useState(6)
 
     // Generation states
     const [generatingOutline, setGeneratingOutline] = useState(false)
@@ -105,7 +105,62 @@ export default function SlidesEditor() {
         })
     }
 
-    // ----- Generate Outline -----
+    // ============================================================
+    // OUTLINE EDITING FUNCTIONS
+    // ============================================================
+    const handleOutlineChange = (idx: number, field: 'title' | 'description', value: string) => {
+        if (!outline) return
+        const newOutline = [...outline]
+        newOutline[idx] = { ...newOutline[idx], [field]: value }
+        setOutline(newOutline)
+    }
+
+    const handleAddSection = () => {
+        if (!outline) return
+        setOutline([
+            ...outline,
+            { title: 'New Section Title', description: 'Describe what this section will cover in detail...' }
+        ])
+    }
+
+    const handleRemoveSection = (idx: number) => {
+        if (!outline) return
+        if (outline.length <= 1) {
+            setError('At least one section is required')
+            return
+        }
+        setOutline(outline.filter((_, i) => i !== idx))
+    }
+
+    const handleMoveUp = (idx: number) => {
+        if (!outline || idx === 0) return
+        const newOutline = [...outline]
+        ;[newOutline[idx - 1], newOutline[idx]] = [newOutline[idx], newOutline[idx - 1]]
+        setOutline(newOutline)
+    }
+
+    const handleMoveDown = (idx: number) => {
+        if (!outline || idx === outline.length - 1) return
+        const newOutline = [...outline]
+        ;[newOutline[idx], newOutline[idx + 1]] = [newOutline[idx + 1], newOutline[idx]]
+        setOutline(newOutline)
+    }
+
+    // ----- Save Outline to DB -----
+    const saveOutlineToDB = async (newOutline: any[]) => {
+        try {
+            await supabase
+                .from('slides_data')
+                .update({ outline: newOutline })
+                .eq('project_id', projectId)
+        } catch (e) {
+            console.error('Failed to save outline:', e)
+        }
+    }
+
+    // ============================================================
+    // Generate Outline (using dedicated OUTLINE API key)
+    // ============================================================
     const handleGenerateOutline = async () => {
         if (!topic.trim()) {
             setError('Please enter a topic')
@@ -125,6 +180,7 @@ export default function SlidesEditor() {
                     topic: topic.trim(),
                     audience,
                     mode,
+                    numSections: numSlides,   // ✅ Sections = slides count
                 }),
             })
 
@@ -132,7 +188,7 @@ export default function SlidesEditor() {
             if (!res.ok) throw new Error(data.error || 'Failed to generate outline')
 
             setOutline(data.outline)
-            setSuccess('✅ Outline generated successfully!')
+            setSuccess(`✅ Unique outline generated (${data.outline.length} sections). You can edit it below.`)
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -140,12 +196,24 @@ export default function SlidesEditor() {
         }
     }
 
-    // ----- Generate Slides -----
+    // ============================================================
+    // Generate Slides (from EDITED outline)
+    // ============================================================
     const handleGenerateSlides = async () => {
         if (!outline || outline.length === 0) {
             setError('Please generate an outline first')
             return
         }
+
+        // Validate outline
+        const emptySections = outline.filter(o => !o.title.trim())
+        if (emptySections.length > 0) {
+            setError('Please fill in all section titles')
+            return
+        }
+
+        // Save current outline to DB before generating slides
+        await saveOutlineToDB(outline)
 
         setGeneratingSlides(true)
         setError('')
@@ -158,11 +226,10 @@ export default function SlidesEditor() {
                 body: JSON.stringify({
                     project_id: projectId,
                     topic: topic.trim(),
-                    num_slides: numSlides,
-                    style,
+                    outline: outline,   // ✅ Send edited outline
                     audience,
                     mode,
-                    outline,
+                    style,
                     templateId: selectedTemplate,
                 }),
             })
@@ -171,7 +238,7 @@ export default function SlidesEditor() {
             if (!res.ok) throw new Error(data.error || 'Failed to generate slides')
 
             setSlides(data.slides)
-            setSuccess('✅ Slides generated successfully!')
+            setSuccess(`✅ ${data.slides.length} slides generated matching your outline!`)
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -179,7 +246,7 @@ export default function SlidesEditor() {
         }
     }
 
-    // ----- Export (Template-Based with Images) -----
+    // ----- Export -----
     const handleExport = async () => {
         if (!slides || slides.length === 0) {
             setError('No slides to export. Generate slides first.')
@@ -197,8 +264,20 @@ export default function SlidesEditor() {
                 body: JSON.stringify({
                     templateId: selectedTemplate,
                     slides: slides.map((s: any, idx: number) => ({
+                        type: s.type || 'content',
                         title: s.title,
                         bullets: s.bullets || [],
+                        steps: s.steps || [],
+                        stats: s.stats || [],
+                        chartType: s.chartType || 'bar',
+                        chartData: s.chartData || [],
+                        leftTitle: s.leftTitle || '',
+                        leftItems: s.leftItems || [],
+                        rightTitle: s.rightTitle || '',
+                        rightItems: s.rightItems || [],
+                        quote: s.quote || '',
+                        author: s.author || '',
+                        items: s.items || [],
                         key_takeaway: s.key_takeaway || '',
                         image: slideImages[idx] || null,
                     })),
@@ -344,7 +423,7 @@ export default function SlidesEditor() {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Number of Slides</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Number of Sections/Slides</label>
                             <input
                                 type="number"
                                 min="3"
@@ -353,6 +432,7 @@ export default function SlidesEditor() {
                                 onChange={(e) => setNumSlides(Number(e.target.value))}
                                 className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition"
                             />
+                            <p className="text-xs text-gray-400 mt-1">AI will create this many outline sections</p>
                         </div>
                     </div>
                     <button
@@ -361,46 +441,115 @@ export default function SlidesEditor() {
                         className="mt-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-3 rounded-2xl font-medium hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
                     >
                         {generatingOutline ? (
-                            <><Loader2 size={18} className="animate-spin" /> Generating Outline...</>
+                            <><Loader2 size={18} className="animate-spin" /> Generating Unique Outline...</>
                         ) : (
                             <><Sparkles size={18} /> Generate Outline</>
                         )}
                     </button>
                 </div>
 
-                {/* ===== STEP 2: OUTLINE ===== */}
-                {outline && (
+                {/* ===== STEP 2: EDITABLE OUTLINE ===== */}
+                {outline && outline.length > 0 && (
                     <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-white/30 mb-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <Layers size={20} className="text-blue-600" />
-                                Step 2: Outline
-                            </h2>
-                            <span className="text-xs text-gray-400">{outline.length} sections</span>
+                        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                            <div>
+                                <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                    <Layers size={20} className="text-blue-600" />
+                                    Step 2: Edit Your Outline
+                                </h2>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    ✏️ Edit titles, descriptions, add/remove/move sections. Slides will match this outline exactly.
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">
+                                    {outline.length} sections
+                                </span>
+                                <button
+                                    onClick={handleAddSection}
+                                    className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1 transition"
+                                >
+                                    <Plus size={14} /> Add
+                                </button>
+                            </div>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+                        <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
                             {outline.map((item, idx) => (
-                                <div key={idx} className="bg-blue-50/50 rounded-xl p-3 border border-blue-100/50">
-                                    <p className="font-semibold text-gray-800 text-sm">{idx + 1}. {item.title}</p>
-                                    <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
+                                <div
+                                    key={idx}
+                                    className="bg-blue-50/50 rounded-xl p-4 border border-blue-100/50 hover:border-blue-300 transition"
+                                >
+                                    <div className="flex items-start gap-3">
+                                        {/* Section number */}
+                                        <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center text-sm font-bold mt-1">
+                                            {idx + 1}
+                                        </div>
+
+                                        {/* Editable fields */}
+                                        <div className="flex-1 space-y-2">
+                                            <input
+                                                type="text"
+                                                value={item.title}
+                                                onChange={(e) => handleOutlineChange(idx, 'title', e.target.value)}
+                                                placeholder="Section title"
+                                                className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                                            />
+                                            <textarea
+                                                value={item.description}
+                                                onChange={(e) => handleOutlineChange(idx, 'description', e.target.value)}
+                                                placeholder="Describe what this section will cover..."
+                                                rows={2}
+                                                className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none transition"
+                                            />
+                                        </div>
+
+                                        {/* Action buttons */}
+                                        <div className="flex flex-col gap-1">
+                                            <button
+                                                onClick={() => handleMoveUp(idx)}
+                                                disabled={idx === 0}
+                                                className="p-1.5 rounded-lg hover:bg-blue-100 text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                                                title="Move up"
+                                            >
+                                                ▲
+                                            </button>
+                                            <button
+                                                onClick={() => handleMoveDown(idx)}
+                                                disabled={idx === outline.length - 1}
+                                                className="p-1.5 rounded-lg hover:bg-blue-100 text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                                                title="Move down"
+                                            >
+                                                ▼
+                                            </button>
+                                            <button
+                                                onClick={() => handleRemoveSection(idx)}
+                                                className="p-1.5 rounded-lg hover:bg-red-100 text-red-500 transition"
+                                                title="Remove section"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
+
                         <button
                             onClick={handleGenerateSlides}
-                            disabled={generatingSlides}
+                            disabled={generatingSlides || outline.length === 0}
                             className="mt-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-8 py-3 rounded-2xl font-medium hover:shadow-lg transition flex items-center gap-2 disabled:opacity-50"
                         >
                             {generatingSlides ? (
-                                <><Loader2 size={18} className="animate-spin" /> Generating Slides...</>
+                                <><Loader2 size={18} className="animate-spin" /> Generating {outline.length} Slides...</>
                             ) : (
-                                <><Zap size={18} /> Generate Slides</>
+                                <><Zap size={18} /> Generate {outline.length} Slides from Outline</>
                             )}
                         </button>
                     </div>
                 )}
 
-                {/* ===== 🎨 STEP 3: CHOOSE TEMPLATE (16 TEMPLATES) ===== */}
+                {/* ===== STEP 3: CHOOSE TEMPLATE (16 TEMPLATES) ===== */}
                 <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-white/30 mb-6">
                     <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                         🎨 Step 3: Choose Template
@@ -413,13 +562,13 @@ export default function SlidesEditor() {
                             return (
                                 <div
                                     key={tpl.id}
-                                    className={`rounded-2xl p-3 border-2 transition cursor-pointer hover:shadow-lg ${isSelected
+                                    className={`rounded-2xl p-3 border-2 transition cursor-pointer hover:shadow-lg ${
+                                        isSelected
                                             ? 'border-purple-600 bg-purple-50 shadow-md'
                                             : 'border-gray-200 hover:border-purple-300 bg-white'
-                                        }`}
+                                    }`}
                                     onClick={() => setSelectedTemplate(tpl.id)}
                                 >
-                                    {/* Mini Preview */}
                                     <div
                                         className="relative h-20 rounded-xl overflow-hidden mb-2"
                                         style={{ backgroundColor: `#${c.bg}` }}
@@ -488,7 +637,6 @@ export default function SlidesEditor() {
                                         borderColor: colors.accent + '40',
                                     }}
                                 >
-                                    {/* Image Upload */}
                                     <div className="mb-4">
                                         <ImageUpload
                                             onImageUpload={(file, preview) => {
@@ -506,29 +654,84 @@ export default function SlidesEditor() {
                                         />
                                     </div>
 
-                                    {/* Title */}
-                                    <div
-                                        className="text-lg font-bold mb-3"
-                                        style={{ color: colors.text }}
-                                    >
+                                    {/* Slide Type Badge */}
+                                    <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 mb-2 uppercase tracking-wide">
+                                        {slide.type || 'content'}
+                                    </span>
+
+                                    <div className="text-lg font-bold mb-3" style={{ color: colors.text }}>
                                         {idx + 1}. {slide.title}
                                     </div>
 
-                                    {/* Bullets */}
-                                    <ul className="space-y-2">
-                                        {slide.bullets?.map((bullet: string, bi: number) => (
-                                            <li
-                                                key={bi}
-                                                className="text-sm flex items-start gap-2 text-justify"
-                                                style={{ color: colors.text }}
-                                            >
-                                                <span style={{ color: colors.accent }} className="flex-shrink-0">▸</span>
-                                                <span className="text-justify">{renderBulletWithHighlights(bullet)}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
+                                    {/* Content preview based on type */}
+                                    {slide.bullets && slide.bullets.length > 0 && (
+                                        <ul className="space-y-2">
+                                            {slide.bullets.map((bullet: string, bi: number) => (
+                                                <li
+                                                    key={bi}
+                                                    className="text-sm flex items-start gap-2 text-justify"
+                                                    style={{ color: colors.text }}
+                                                >
+                                                    <span style={{ color: colors.accent }} className="flex-shrink-0">▸</span>
+                                                    <span className="text-justify">{renderBulletWithHighlights(bullet)}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
 
-                                    {/* Key Takeaway */}
+                                    {slide.steps && slide.steps.length > 0 && (
+                                        <ol className="space-y-1 text-sm list-decimal list-inside" style={{ color: colors.text }}>
+                                            {slide.steps.map((step: string, si: number) => (
+                                                <li key={si}>{step}</li>
+                                            ))}
+                                        </ol>
+                                    )}
+
+                                    {slide.stats && slide.stats.length > 0 && (
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {slide.stats.map((s: any, si: number) => (
+                                                <div key={si} className="text-center p-2 rounded-lg bg-white/50">
+                                                    <div className="text-lg font-bold" style={{ color: colors.accent }}>{s.value}</div>
+                                                    <div className="text-xs" style={{ color: colors.text }}>{s.label}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {slide.items && slide.items.length > 0 && (
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {slide.items.map((it: any, ii: number) => (
+                                                <div key={ii} className="text-sm" style={{ color: colors.text }}>
+                                                    {it.icon} {it.label}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {slide.quote && (
+                                        <blockquote className="italic text-sm border-l-2 pl-3" style={{ borderColor: colors.accent, color: colors.text }}>
+                                            "{slide.quote}"
+                                            {slide.author && <footer className="text-xs mt-1">— {slide.author}</footer>}
+                                        </blockquote>
+                                    )}
+
+                                    {(slide.leftItems?.length > 0 || slide.rightItems?.length > 0) && (
+                                        <div className="grid grid-cols-2 gap-3 text-xs">
+                                            <div>
+                                                <div className="font-bold mb-1" style={{ color: colors.accent }}>{slide.leftTitle}</div>
+                                                <ul className="space-y-1" style={{ color: colors.text }}>
+                                                    {slide.leftItems?.map((li: string, lii: number) => <li key={lii}>• {li}</li>)}
+                                                </ul>
+                                            </div>
+                                            <div>
+                                                <div className="font-bold mb-1" style={{ color: colors.accent }}>{slide.rightTitle}</div>
+                                                <ul className="space-y-1" style={{ color: colors.text }}>
+                                                    {slide.rightItems?.map((ri: string, rii: number) => <li key={rii}>• {ri}</li>)}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {slide.key_takeaway && (
                                         <p
                                             className="mt-3 text-xs italic p-2 rounded-lg text-justify"
@@ -558,7 +761,6 @@ export default function SlidesEditor() {
                         className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* Header */}
                         <div className="flex items-center justify-between p-6 border-b border-gray-100">
                             <div className="flex items-center gap-3">
                                 <span className="text-3xl">{previewTemplate.icon}</span>
@@ -575,7 +777,6 @@ export default function SlidesEditor() {
                             </button>
                         </div>
 
-                        {/* Large Preview */}
                         <div className="p-6">
                             <div
                                 className="rounded-2xl shadow-lg border relative aspect-video overflow-hidden"
@@ -630,7 +831,6 @@ export default function SlidesEditor() {
                                 </div>
                             </div>
 
-                            {/* Actions */}
                             <div className="mt-6 flex gap-3">
                                 <button
                                     onClick={() => setPreviewTemplate(null)}
