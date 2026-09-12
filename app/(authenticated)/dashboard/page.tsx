@@ -304,7 +304,7 @@ export default function Dashboard() {
             <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
                 <h2 className="text-3xl md:text-4xl font-bold">
-                  👋 Welcome back, <span className="bg-white/20 px-4 py-1 rounded-full text-2xl">{userName}</span>
+                  Welcome back, <span className="bg-white/20 px-4 py-1 rounded-full text-2xl">{userName}</span>
                 </h2>
                 <p className="text-purple-100 mt-2 max-w-xl">
                   Your AI-powered learning hub is ready. Continue your journey with smart tools.
@@ -358,7 +358,7 @@ export default function Dashboard() {
               icon={FileText}
               color="blue"
               projects={slidesProjects}
-              emptyIcon="📊"
+              emptyIcon=""
               emptyText="No slides yet"
               createLink="/slides/dashboard"   // ✅ Dashboard link
               onLaunch={handleLaunch}
@@ -369,7 +369,7 @@ export default function Dashboard() {
               icon={HelpCircle}
               color="purple"
               projects={quizzesProjects}
-              emptyIcon="🧠"
+              emptyIcon=""
               emptyText="No quizzes yet"
               createLink="/quiz/dashboard"     // ✅ Dashboard link
               onLaunch={handleLaunch}
@@ -380,7 +380,7 @@ export default function Dashboard() {
               icon={BookOpen}
               color="green"
               projects={lessonPlansProjects}
-              emptyIcon="📚"
+              emptyIcon=""
               emptyText="No lesson plans yet"
               createLink="/lesson-planner/dashboard"   // ✅ Dashboard link
               onLaunch={handleLaunch}

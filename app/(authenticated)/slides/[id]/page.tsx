@@ -135,14 +135,14 @@ export default function SlidesEditor() {
     const handleMoveUp = (idx: number) => {
         if (!outline || idx === 0) return
         const newOutline = [...outline]
-        ;[newOutline[idx - 1], newOutline[idx]] = [newOutline[idx], newOutline[idx - 1]]
+            ;[newOutline[idx - 1], newOutline[idx]] = [newOutline[idx], newOutline[idx - 1]]
         setOutline(newOutline)
     }
 
     const handleMoveDown = (idx: number) => {
         if (!outline || idx === outline.length - 1) return
         const newOutline = [...outline]
-        ;[newOutline[idx], newOutline[idx + 1]] = [newOutline[idx + 1], newOutline[idx]]
+            ;[newOutline[idx], newOutline[idx + 1]] = [newOutline[idx + 1], newOutline[idx]]
         setOutline(newOutline)
     }
 
@@ -188,7 +188,7 @@ export default function SlidesEditor() {
             if (!res.ok) throw new Error(data.error || 'Failed to generate outline')
 
             setOutline(data.outline)
-            setSuccess(`✅ Unique outline generated (${data.outline.length} sections). You can edit it below.`)
+            setSuccess(` Unique outline generated (${data.outline.length} sections). You can edit it below.`)
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -238,7 +238,7 @@ export default function SlidesEditor() {
             if (!res.ok) throw new Error(data.error || 'Failed to generate slides')
 
             setSlides(data.slides)
-            setSuccess(`✅ ${data.slides.length} slides generated matching your outline!`)
+            setSuccess(` ${data.slides.length} slides generated matching your outline!`)
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -300,7 +300,7 @@ export default function SlidesEditor() {
             document.body.removeChild(a)
             window.URL.revokeObjectURL(url)
 
-            setSuccess('✅ Presentation exported successfully!')
+            setSuccess(' Presentation exported successfully!')
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -458,7 +458,7 @@ export default function SlidesEditor() {
                                     Step 2: Edit Your Outline
                                 </h2>
                                 <p className="text-xs text-gray-500 mt-1">
-                                    ✏️ Edit titles, descriptions, add/remove/move sections. Slides will match this outline exactly.
+                                    Edit titles, descriptions, add/remove/move sections. Slides will match this outline exactly.
                                 </p>
                             </div>
                             <div className="flex items-center gap-2">
@@ -562,11 +562,10 @@ export default function SlidesEditor() {
                             return (
                                 <div
                                     key={tpl.id}
-                                    className={`rounded-2xl p-3 border-2 transition cursor-pointer hover:shadow-lg ${
-                                        isSelected
+                                    className={`rounded-2xl p-3 border-2 transition cursor-pointer hover:shadow-lg ${isSelected
                                             ? 'border-purple-600 bg-purple-50 shadow-md'
                                             : 'border-gray-200 hover:border-purple-300 bg-white'
-                                    }`}
+                                        }`}
                                     onClick={() => setSelectedTemplate(tpl.id)}
                                 >
                                     <div
@@ -741,7 +740,7 @@ export default function SlidesEditor() {
                                                 borderLeft: `3px solid #${colors.accent}`,
                                             }}
                                         >
-                                            💡 {slide.key_takeaway}
+                                            {slide.key_takeaway}
                                         </p>
                                     )}
                                 </div>
@@ -825,7 +824,7 @@ export default function SlidesEditor() {
                                         }}
                                     >
                                         <p className="text-sm italic" style={{ color: `#${previewTemplate.styles.colors.text}` }}>
-                                            💡 Key takeaway appears here
+                                            Key takeaway appears here
                                         </p>
                                     </div>
                                 </div>

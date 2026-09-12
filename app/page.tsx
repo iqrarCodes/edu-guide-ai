@@ -49,7 +49,7 @@ export default function LandingPage() {
       name: 'Slides Generator',
       desc: 'AI-powered presentation creation with stunning templates and auto-generated content.',
       color: 'from-purple-500 to-indigo-500',
-      features: ['AI outlines', 'Multiple templates', 'Export PPTX/DOCX', 'Real-time preview'],
+      features: ['AI outlines', 'Multiple templates', 'Export PPTX', 'Real-time preview'],
       path: '/slides',
     },
     {
@@ -261,12 +261,12 @@ export default function LandingPage() {
               <p className="text-xs text-gray-500">AI Tools</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">500+</p>
-              <p className="text-xs text-gray-500">Active Users</p>
+              <p className="text-2xl font-bold text-gray-900"></p>
+              <p className="text-xs text-gray-500"></p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">94%</p>
-              <p className="text-xs text-gray-500">Satisfaction</p>
+              <p className="text-2xl font-bold text-gray-900"></p>
+              <p className="text-xs text-gray-500"></p>
             </div>
           </motion.div>
         </motion.div>
@@ -375,11 +375,10 @@ export default function LandingPage() {
                   initial={{ opacity: 0, y: 30 }}
                   animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
                   transition={{ duration: 0.5, delay: idx * 0.15 }}
-                  className={`p-6 rounded-2xl border transition-all ${
-                    isInView
-                      ? 'border-purple-300 bg-purple-50'
-                      : 'border-gray-200 bg-white'
-                  }`}
+                  className={`p-6 rounded-2xl border transition-all ${isInView
+                    ? 'border-purple-300 bg-purple-50'
+                    : 'border-gray-200 bg-white'
+                    }`}
                 >
                   <div className="flex items-start gap-5">
                     <span className={`text-4xl font-bold flex-shrink-0 ${isInView ? 'text-purple-600' : 'text-gray-300'}`}>

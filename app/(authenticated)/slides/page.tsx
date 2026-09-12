@@ -118,7 +118,7 @@ export default function SlidesList() {
 
         {projects.length === 0 ? (
           <div className="text-center py-20 bg-white/60 backdrop-blur-sm rounded-3xl border border-dashed border-gray-300">
-            <div className="text-6xl mb-4">📊</div>
+            <div className="text-6xl mb-4"></div>
             <p className="text-xl font-medium text-gray-500">No slides projects yet</p>
             <p className="text-gray-400 text-sm mt-1">Create your first AI-powered presentation</p>
           </div>
@@ -178,7 +178,7 @@ export default function SlidesList() {
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowModal(false)}>
           <div className="bg-white rounded-2xl max-w-2xl w-full p-8 shadow-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">📊 New Slides Project</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2"> New Slides Project</h2>
             <p className="text-sm text-gray-400 mb-6">Create a new AI-powered presentation.</p>
             <form onSubmit={handleCreate}>
               <div className="mb-4">

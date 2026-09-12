@@ -44,7 +44,7 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
         id: 'modern',
         name: 'Modern',
         description: 'Clean left-bar with number badge',
-        icon: '✨',
+        icon: '',
         layout: 'left-bar',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 44, subtitleFontSize: 20, decoration: 'bar' },
@@ -56,7 +56,7 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
         id: 'corporate',
         name: 'Corporate',
         description: 'Top banner, formal & bold',
-        icon: '💼',
+        icon: '',
         layout: 'top-banner',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 40, subtitleFontSize: 18, decoration: 'bar' },
@@ -68,7 +68,7 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
         id: 'creative',
         name: 'Creative',
         description: 'Bold colors, overlapping circles',
-        icon: '🎨',
+        icon: '',
         layout: 'big-circles',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 48, subtitleFontSize: 22, decoration: 'circle' },
@@ -80,7 +80,7 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
         id: 'academic',
         name: 'Academic',
         description: 'Classic numbered layout',
-        icon: '📚',
+        icon: '',
         layout: 'numbered',
         styles: {
             titleSlide: { alignment: 'left', titleFontSize: 36, subtitleFontSize: 18, decoration: 'none' },
@@ -92,7 +92,7 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
         id: 'thesis',
         name: 'Thesis Defense',
         description: 'Sidebar layout with title strip',
-        icon: '🎓',
+        icon: '',
         layout: 'sidebar',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 44, subtitleFontSize: 20, decoration: 'block' },
@@ -104,7 +104,7 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
         id: 'mckinsey',
         name: 'McKinsey Report',
         description: 'Tight grid consulting style',
-        icon: '📊',
+        icon: '',
         layout: 'split',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 40, subtitleFontSize: 18, decoration: 'bar' },
@@ -116,7 +116,7 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
         id: 'social',
         name: 'Social Media',
         description: 'Vibrant block layout',
-        icon: '📱',
+        icon: '',
         layout: 'blocks',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 46, subtitleFontSize: 20, decoration: 'circle' },
@@ -128,7 +128,7 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
         id: 'startup',
         name: 'Startup Pitch',
         description: 'Big hero center design',
-        icon: '🚀',
+        icon: '',
         layout: 'hero-center',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 52, subtitleFontSize: 22, decoration: 'block' },
@@ -140,7 +140,7 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
         id: 'pitch',
         name: 'Pitch Deck',
         description: 'Hero with left title bar',
-        icon: '📈',
+        icon: '',
         layout: 'hero-center',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 50, subtitleFontSize: 20, decoration: 'block' },
@@ -152,7 +152,7 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
         id: 'report',
         name: 'Business Report',
         description: 'Split content with accents',
-        icon: '📋',
+        icon: '',
         layout: 'split',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 40, subtitleFontSize: 18, decoration: 'bar' },
@@ -164,7 +164,7 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
         id: 'strategy',
         name: 'Strategy Deck',
         description: 'Numbered strategic steps',
-        icon: '🎯',
+        icon: '',
         layout: 'numbered',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 44, subtitleFontSize: 20, decoration: 'circle' },
@@ -176,7 +176,7 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
         id: 'analysis',
         name: 'Data Analysis',
         description: 'Sidebar data layout',
-        icon: '📉',
+        icon: '',
         layout: 'sidebar',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 44, subtitleFontSize: 20, decoration: 'bar' },
@@ -188,7 +188,7 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
         id: 'product',
         name: 'Product Launch',
         description: 'Block cards layout',
-        icon: '🎁',
+        icon: '',
         layout: 'blocks',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 48, subtitleFontSize: 22, decoration: 'circle' },
@@ -200,7 +200,7 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
         id: 'ux',
         name: 'UX Design',
         description: 'Left-bar minimal style',
-        icon: '🎨',
+        icon: '',
         layout: 'left-bar',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 44, subtitleFontSize: 20, decoration: 'block' },
@@ -212,7 +212,7 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
         id: 'saas',
         name: 'SaaS GTM',
         description: 'Block layout with header strip',
-        icon: '☁️',
+        icon: '',
         layout: 'blocks',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 46, subtitleFontSize: 20, decoration: 'block' },
@@ -224,7 +224,7 @@ export const SLIDE_TEMPLATES: Record<TemplateId, TemplateDefinition> = {
         id: 'corrective',
         name: 'Corrective Action',
         description: 'Split plan layout',
-        icon: '🛠️',
+        icon: '',
         layout: 'split',
         styles: {
             titleSlide: { alignment: 'center', titleFontSize: 40, subtitleFontSize: 18, decoration: 'bar' },

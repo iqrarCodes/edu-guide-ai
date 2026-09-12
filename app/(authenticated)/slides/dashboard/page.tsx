@@ -88,7 +88,7 @@ export default function SlidesDashboard() {
         {/* Welcome */}
         <motion.div className="mb-8" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <h2 className="text-2xl font-bold text-gray-800">
-            Welcome back, <span className="text-purple-600">{userName}</span>! 👋
+            Welcome back, <span className="text-purple-600">{userName}</span>!
           </h2>
         </motion.div>
 
@@ -112,7 +112,7 @@ export default function SlidesDashboard() {
 
         {/* Quick Actions */}
         <div className="mb-8">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">⚡ Quick Actions</h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-4"> Quick Actions</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {quickActions.map((action, idx) => (
               <motion.button key={idx} onClick={action.action} className={`bg-gradient-to-r ${action.color} text-white p-5 rounded-2xl shadow-sm hover:shadow-lg transition flex items-center gap-3 group`} whileHover={{ y: -4 }} whileTap={{ scale: 0.97 }}>
@@ -126,7 +126,7 @@ export default function SlidesDashboard() {
 
         {/* ===== TEMPLATES GALLERY (16 Templates) ===== */}
         <div ref={templatesRef} className="mb-8 scroll-mt-20">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">🎨 Available Templates</h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-4"> Available Templates</h3>
           <p className="text-gray-400 text-sm mb-4">
             Click "Preview" to see the design, or "Use" to create a presentation.
           </p>
@@ -219,7 +219,7 @@ export default function SlidesDashboard() {
 
           {presentations.length === 0 ? (
             <div className="text-center py-16 bg-white/60 backdrop-blur-sm rounded-3xl border border-dashed border-gray-300">
-              <div className="text-6xl mb-4">📊</div>
+              <div className="text-6xl mb-4"></div>
               <p className="text-xl font-medium text-gray-500">No presentations yet</p>
               <button onClick={() => router.push('/slides')} className="mt-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-2.5 rounded-xl font-medium hover:shadow-lg transition">
                 + New Presentation
@@ -320,7 +320,7 @@ export default function SlidesDashboard() {
                     </ul>
                     <div className="p-3 rounded-xl mt-4" style={{ backgroundColor: `#${previewTemplate.styles.colors.accent}20`, border: `1px solid #${previewTemplate.styles.colors.accent}` }}>
                       <p className="text-sm italic" style={{ color: `#${previewTemplate.styles.colors.text}` }}>
-                        💡 Key takeaway appears here
+                        Key takeaway appears here
                       </p>
                     </div>
                   </div>

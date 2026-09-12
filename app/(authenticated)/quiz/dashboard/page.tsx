@@ -73,7 +73,7 @@ export default function QuizDashboard() {
         {
             icon: <Download size={20} />,
             label: 'Export Analytics',
-            action: () => alert('📊 Analytics export coming soon!'),
+            action: () => alert(' Analytics export coming soon!'),
             color: 'from-green-500 to-emerald-500',
         },
     ]
@@ -114,7 +114,7 @@ export default function QuizDashboard() {
                     transition={{ duration: 0.5 }}
                 >
                     <h2 className="text-2xl font-bold text-gray-800">
-                        Welcome back, <span className="text-purple-600">{userName}</span>! 👋
+                        Welcome back, <span className="text-purple-600">{userName}</span>!
                     </h2>
                     <p className="text-gray-500 text-sm mt-1">Here's an overview of your quizzes.</p>
                 </motion.div>
@@ -145,7 +145,7 @@ export default function QuizDashboard() {
 
                 {/* Quick Actions */}
                 <div className="mb-8">
-                    <h3 className="text-lg font-bold text-gray-800 mb-4">⚡ Quick Actions</h3>
+                    <h3 className="text-lg font-bold text-gray-800 mb-4"> Quick Actions</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {quickActions.map((action, idx) => (
                             <motion.button
@@ -185,7 +185,7 @@ export default function QuizDashboard() {
 
                     {quizzes.length === 0 ? (
                         <div className="text-center py-16 bg-white/60 backdrop-blur-sm rounded-3xl border border-dashed border-gray-300">
-                            <div className="text-6xl mb-4">🧠</div>
+                            <div className="text-6xl mb-4"></div>
                             <p className="text-xl font-medium text-gray-500">No quizzes yet</p>
                             <p className="text-gray-400 text-sm mt-1">Create your first AI-powered quiz</p>
                             <button
@@ -213,7 +213,7 @@ export default function QuizDashboard() {
                                         <div className="flex items-start justify-between">
                                             <div>
                                                 <h4 className="font-bold text-gray-800">
-                                                    {quiz.video_url ? '🎬 Video Quiz' : '📄 File Quiz'}
+                                                    {quiz.video_url ? '🎬 Video Quiz' : ' File Quiz'}
                                                 </h4>
                                                 <p className="text-xs text-gray-400 mt-1">
                                                     {quiz.difficulty} • {quiz.language}

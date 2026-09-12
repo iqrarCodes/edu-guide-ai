@@ -120,7 +120,7 @@ export default function SlidesEditor() {
             if (!res.ok) throw new Error(data.error || 'Failed to generate outline')
 
             setOutline(data.outline)
-            setSuccess('✅ Outline generated successfully!')
+            setSuccess(' Outline generated successfully!')
             const { data: updatedData } = await supabase
                 .from('slides_data')
                 .select('*')
@@ -164,7 +164,7 @@ export default function SlidesEditor() {
             if (!res.ok) throw new Error(data.error || 'Failed to generate slides')
 
             setSlides(data.slides)
-            setSuccess('✅ Slides generated successfully!')
+            setSuccess(' Slides generated successfully!')
             const { data: updatedData } = await supabase
                 .from('slides_data')
                 .select('*')
@@ -216,7 +216,7 @@ export default function SlidesEditor() {
             document.body.removeChild(a)
             window.URL.revokeObjectURL(url)
 
-            setSuccess(`✅ ${format.toUpperCase()} exported successfully!`)
+            setSuccess(` ${format.toUpperCase()} exported successfully!`)
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -410,10 +410,10 @@ export default function SlidesEditor() {
                     </div>
                 )}
 
-                {/* 🎨 TEMPLATE PREVIEW - ALWAYS VISIBLE (even if slides not generated) */}
+                {/*  TEMPLATE PREVIEW - ALWAYS VISIBLE (even if slides not generated) */}
                 <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-white/30 mb-6">
                     <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        🎨 Choose Template
+                        Choose Template
                     </h2>
                     <TemplatePreview
                         selected={selectedTemplate}
@@ -455,7 +455,7 @@ export default function SlidesEditor() {
                                                     return updated
                                                 })
                                             }}
-                                            placeholder="📷 Add image"
+                                            placeholder=" Add image"
                                         />
                                     </div>
 
@@ -490,7 +490,7 @@ export default function SlidesEditor() {
                                                 color: colors.text,
                                             }}
                                         >
-                                            💡 {slide.key_takeaway}
+                                            {slide.key_takeaway}
                                         </p>
                                     )}
                                 </div>

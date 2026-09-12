@@ -129,7 +129,7 @@ export default function QuizPage() {
             if (error) throw error
 
             setAttempt(attemptData)
-            alert(`✅ Quiz submitted! Score: ${totalCorrect}/${total}`)
+            alert(` Quiz submitted! Score: ${totalCorrect}/${total}`)
         } catch (err: any) {
             setError(err.message || 'Submission failed')
         } finally {
@@ -171,7 +171,7 @@ export default function QuizPage() {
                     <div className="flex items-center gap-3">
                         {attempt && (
                             <span className="text-sm font-bold text-green-600">
-                                ✅ Score: {attempt.score}/{attempt.total} ({Math.round(attempt.percentage)}%)
+                                Score: {attempt.score}/{attempt.total} ({Math.round(attempt.percentage)}%)
                             </span>
                         )}
                         <span className="text-sm text-gray-400">
@@ -181,7 +181,7 @@ export default function QuizPage() {
                 </div>
 
                 <h1 className="text-2xl font-bold text-gray-800 mb-2">
-                    {quiz.source_type === 'video' ? '🎬 Video Quiz' : '📄 File Quiz'}
+                    {quiz.source_type === 'video' ? ' Video Quiz' : ' File Quiz'}
                 </h1>
                 <p className="text-sm text-gray-500 mb-6">
                     {quiz.difficulty} • {quiz.language}
@@ -197,7 +197,7 @@ export default function QuizPage() {
                 {/* Summary */}
                 {quiz.summary && quiz.summary.length > 0 && (
                     <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-white/30 mb-6">
-                        <h3 className="text-sm font-bold text-gray-800 mb-3">📌 Smart Summary</h3>
+                        <h3 className="text-sm font-bold text-gray-800 mb-3"> Smart Summary</h3>
                         <ul className="space-y-1.5">
                             {quiz.summary.map((point: string, i: number) => (
                                 <li key={i} className="text-sm text-gray-600">• {point}</li>
@@ -257,7 +257,7 @@ export default function QuizPage() {
                                 </div>
                                 {attempt && isAnswered && mcq.explanation && (
                                     <div className="mt-3 text-xs text-gray-500 bg-gray-50 p-2 rounded-lg">
-                                        💡 {mcq.explanation}
+                                        {mcq.explanation}
                                     </div>
                                 )}
                             </div>
@@ -290,7 +290,7 @@ export default function QuizPage() {
                                             <p className="text-xs text-gray-500 mt-1">Expected keywords: {sq.expected_keywords?.join(', ')}</p>
                                         )}
                                         {isCorrect && (
-                                            <p className="text-xs text-green-600 mt-1">✅ Correct! Contains expected keywords.</p>
+                                            <p className="text-xs text-green-600 mt-1"> Correct! Contains expected keywords.</p>
                                         )}
                                     </div>
                                 ) : (
@@ -318,7 +318,7 @@ export default function QuizPage() {
                         {submitting ? (
                             <><Loader2 size={18} className="animate-spin inline mr-2" /> Submitting...</>
                         ) : (
-                            isComplete ? '🚀 Submit Quiz' : '🔒 Answer all questions to submit'
+                            isComplete ? ' Submit Quiz' : ' Answer all questions to submit'
                         )}
                     </button>
                 )}
@@ -328,7 +328,7 @@ export default function QuizPage() {
                         onClick={() => router.push('/quiz/dashboard')}
                         className="w-full py-4 rounded-2xl font-bold text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:shadow-lg transition"
                     >
-                        📊 Go to Dashboard
+                        Go to Dashboard
                     </button>
                 )}
             </div>

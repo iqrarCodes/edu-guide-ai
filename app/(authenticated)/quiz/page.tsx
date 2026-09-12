@@ -228,7 +228,7 @@ export default function QuizDashboard() {
                     {/* Header */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-800">🧠 AI Quiz Generator</h1>
+                            <h1 className="text-2xl font-bold text-gray-800"> AI Quiz Generator</h1>
                             <p className="text-gray-500">Create and manage AI-powered quizzes</p>
                         </div>
                         <button
@@ -242,7 +242,7 @@ export default function QuizDashboard() {
                     {/* Quiz List */}
                     {quizzes.length === 0 ? (
                         <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
-                            <div className="text-6xl mb-4">📝</div>
+                            <div className="text-6xl mb-4"></div>
                             <h3 className="text-xl font-semibold text-gray-700">No quizzes yet</h3>
                             <p className="text-gray-400 mt-1">Create your first quiz from a topic or file.</p>
                             <button
@@ -262,7 +262,7 @@ export default function QuizDashboard() {
                                 >
                                     <div className="flex items-center gap-2 mb-2">
                                         <span className="text-2xl">
-                                            {quiz.source_type === 'topic' ? '📝' : '📄'}
+                                            {quiz.source_type === 'topic' ? '' : ''}
                                         </span>
                                         <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                                             {quiz.source_type === 'topic' ? 'Topic' : 'File'}
@@ -305,7 +305,7 @@ export default function QuizDashboard() {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-2xl font-bold text-gray-800">🧠 New Quiz</h2>
+                            <h2 className="text-2xl font-bold text-gray-800"> New Quiz</h2>
                             <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
                                 <X size={24} />
                             </button>
@@ -325,7 +325,7 @@ export default function QuizDashboard() {
                                             : 'border-gray-200 hover:border-purple-200'
                                             }`}
                                     >
-                                        <span className="text-2xl block">📝</span>
+                                        <span className="text-2xl block"></span>
                                         Topic
                                     </button>
                                     <button
@@ -336,7 +336,7 @@ export default function QuizDashboard() {
                                             : 'border-gray-200 hover:border-purple-200'
                                             }`}
                                     >
-                                        <span className="text-2xl block">📄</span>
+                                        <span className="text-2xl block"></span>
                                         File
                                     </button>
                                 </div>
@@ -389,7 +389,7 @@ export default function QuizDashboard() {
                                         />
                                         {file && (
                                             <p className="text-sm text-gray-500 mt-1">
-                                                📄 {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                                                {file.name} ({(file.size / 1024).toFixed(1)} KB)
                                             </p>
                                         )}
                                     </div>
@@ -405,7 +405,7 @@ export default function QuizDashboard() {
                                             className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"
                                         />
                                         <p className="text-xs text-gray-400 mt-1">
-                                            💡 Leave empty to use the entire file.
+                                            Leave empty to use the entire file.
                                         </p>
                                     </div>
                                 </div>
@@ -484,7 +484,7 @@ export default function QuizDashboard() {
                                             Generating...
                                         </>
                                     ) : (
-                                        '🚀 Generate Quiz'
+                                        ' Generate Quiz'
                                     )}
                                 </button>
                             </div>
