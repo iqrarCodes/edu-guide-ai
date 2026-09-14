@@ -5,10 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import {
-    Plus, FileText, HelpCircle, BookOpen, Sparkles,
-    Clock, ArrowRight, X, Menu, LayoutDashboard,
-    History, Bookmark, Settings, LifeBuoy, MessageCircle,
-    Library, LogOut, Star, Zap,
+    Plus, Clock, X,
 } from 'lucide-react'
 import ChatWidget from '@/components/ChatWidget'
 
@@ -39,9 +36,6 @@ export default function QuizDashboard() {
     const [numMcqs, setNumMcqs] = useState(5)
     const [numShortQuestions, setNumShortQuestions] = useState(3)
     const [submitting, setSubmitting] = useState(false)
-
-    // Sidebar state
-    const [sidebarOpen, setSidebarOpen] = useState(false)
 
     useEffect(() => {
         fetchQuizzes()
@@ -120,26 +114,6 @@ export default function QuizDashboard() {
         }
     }
 
-    // ----- Logout -----
-    const handleLogout = async () => {
-        await supabase.auth.signOut()
-        router.push('/login')
-    }
-
-    // ----- Sidebar Nav -----
-    const navItems = [
-        { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-        { icon: FileText, label: 'AI Slides', href: '/slides' },
-        { icon: HelpCircle, label: 'AI Quizzes', href: '/quiz', active: true },
-        { icon: BookOpen, label: 'Lesson Planner', href: '/lesson-planner' },
-        { icon: MessageCircle, label: 'AI Chat', href: '/chat' },
-        { icon: Library, label: 'My Library', href: '/library' },
-        { icon: History, label: 'History', href: '/history' },
-        { icon: Bookmark, label: 'Bookmarks', href: '/bookmarks' },
-        { icon: Settings, label: 'Settings', href: '/settings' },
-        { icon: LifeBuoy, label: 'Help & Support', href: '/support' },
-    ]
-
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -149,152 +123,77 @@ export default function QuizDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
-            {/* Sidebar */}
-            <aside
-                className={`fixed inset-y-0 left-0 z-50 w-72 bg-white/80 backdrop-blur-xl shadow-2xl transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                    } lg:translate-x-0 lg:static lg:shadow-sm border-r border-gray-200/50 flex flex-col`}
-            >
-                <div className="p-4 border-b border-gray-200/50">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center text-white font-bold">
-                            {localStorage.getItem('userName')?.charAt(0) || 'U'}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-gray-800 truncate">
-                                {localStorage.getItem('userName') || 'Guest'}
-                            </p>
-                            <p className="text-xs text-gray-400 truncate">
-                                {localStorage.getItem('userEmail') || ''}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-                    {navItems.map((item) => (
-                        <button
-                            key={item.label}
-                            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${item.active
-                                ? 'bg-gradient-to-r from-purple-50 to-indigo-50 text-purple-700 shadow-sm'
-                                : 'text-gray-600 hover:bg-gray-100/70 hover:text-purple-600'
-                                }`}
-                            onClick={() => {
-                                if (item.href) router.push(item.href)
-                            }}
-                        >
-                            <item.icon size={18} />
-                            {item.label}
-                            {item.active && (
-                                <span className="ml-auto w-2 h-2 rounded-full bg-purple-500" />
-                            )}
-                        </button>
-                    ))}
-                </nav>
-
-                <div className="p-4 border-t border-gray-200/50 space-y-3">
-                    <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-4 text-white">
-                        <div className="flex items-center gap-2 mb-1">
-                            <Star size={16} className="fill-yellow-400 text-yellow-400" />
-                            <span className="font-bold text-sm">Upgrade to Pro</span>
-                        </div>
-                        <p className="text-xs text-purple-100 mb-2">Unlock unlimited projects & advanced AI.</p>
-                        <button
-                            onClick={() => toast.info('Upgrade coming soon!')}
-                            className="w-full bg-white/20 hover:bg-white/30 text-white text-xs font-medium py-1.5 rounded-lg transition"
-                        >
-                            <Zap size={12} className="inline mr-1" /> Upgrade Now
-                        </button>
+        <>
+            <div className="p-4 md:p-8 max-w-7xl mx-auto">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-800"> AI Quiz Generator</h1>
+                        <p className="text-gray-500">Create and manage AI-powered quizzes</p>
                     </div>
                     <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 py-2.5 rounded-xl text-sm font-medium transition"
+                        onClick={() => setShowModal(true)}
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-xl font-medium transition flex items-center gap-2 shadow-sm"
                     >
-                        <LogOut size={18} /> Logout
+                        <Plus size={20} /> New Quiz
                     </button>
                 </div>
-            </aside>
 
-            {/* Main */}
-            <main className="flex-1 overflow-y-auto">
-                <header className="lg:hidden bg-white/80 backdrop-blur-md border-b border-gray-200/50 p-4 flex items-center justify-between sticky top-0 z-40">
-                    <h1 className="text-xl font-bold text-purple-600">EduGuide AI+</h1>
-                    <button onClick={() => setSidebarOpen(!sidebarOpen)}>
-                        {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-                    </button>
-                </header>
-
-                <div className="p-4 md:p-8 max-w-7xl mx-auto">
-                    {/* Header */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-800"> AI Quiz Generator</h1>
-                            <p className="text-gray-500">Create and manage AI-powered quizzes</p>
-                        </div>
+                {/* Quiz List */}
+                {quizzes.length === 0 ? (
+                    <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
+                        <div className="text-6xl mb-4"></div>
+                        <h3 className="text-xl font-semibold text-gray-700">No quizzes yet</h3>
+                        <p className="text-gray-400 mt-1">Create your first quiz from a topic or file.</p>
                         <button
                             onClick={() => setShowModal(true)}
-                            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-xl font-medium transition flex items-center gap-2 shadow-sm"
+                            className="mt-4 bg-purple-600 text-white px-6 py-2 rounded-xl hover:bg-purple-700 transition"
                         >
-                            <Plus size={20} /> New Quiz
+                            + Create Quiz
                         </button>
                     </div>
-
-                    {/* Quiz List */}
-                    {quizzes.length === 0 ? (
-                        <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
-                            <div className="text-6xl mb-4"></div>
-                            <h3 className="text-xl font-semibold text-gray-700">No quizzes yet</h3>
-                            <p className="text-gray-400 mt-1">Create your first quiz from a topic or file.</p>
-                            <button
-                                onClick={() => setShowModal(true)}
-                                className="mt-4 bg-purple-600 text-white px-6 py-2 rounded-xl hover:bg-purple-700 transition"
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {quizzes.map((quiz) => (
+                            <div
+                                key={quiz.id}
+                                className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition cursor-pointer"
+                                onClick={() => router.push(`/quiz/${quiz.id}`)}
                             >
-                                + Create Quiz
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {quizzes.map((quiz) => (
-                                <div
-                                    key={quiz.id}
-                                    className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition cursor-pointer"
-                                    onClick={() => router.push(`/quiz/${quiz.id}`)}
-                                >
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-2xl">
-                                            {quiz.source_type === 'topic' ? '' : ''}
-                                        </span>
-                                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                                            {quiz.source_type === 'topic' ? 'Topic' : 'File'}
-                                        </span>
-                                    </div>
-                                    <h3 className="font-semibold text-gray-800 truncate">
-                                        {quiz.source_type === 'topic'
-                                            ? quiz.source_url || 'Topic Quiz'
-                                            : quiz.source_url || 'File Quiz'}
-                                    </h3>
-                                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                                        <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full">
-                                            {quiz.difficulty}
-                                        </span>
-                                        <span>{quiz.language}</span>
-                                        <span>•</span>
-                                        <span>{quiz.mcqs?.length || 0} MCQs</span>
-                                        <span>•</span>
-                                        <span>{quiz.short_questions?.length || 0} Short</span>
-                                    </div>
-                                    <div className="flex items-center gap-1 text-xs text-gray-400 mt-2">
-                                        <Clock size={12} />
-                                        {new Date(quiz.created_at).toLocaleDateString()}
-                                    </div>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-2xl">
+                                        {quiz.source_type === 'topic' ? '' : ''}
+                                    </span>
+                                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                                        {quiz.source_type === 'topic' ? 'Topic' : 'File'}
+                                    </span>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </main>
+                                <h3 className="font-semibold text-gray-800 truncate">
+                                    {quiz.source_type === 'topic'
+                                        ? quiz.source_url || 'Topic Quiz'
+                                        : quiz.source_url || 'File Quiz'}
+                                </h3>
+                                <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                                    <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full">
+                                        {quiz.difficulty}
+                                    </span>
+                                    <span>{quiz.language}</span>
+                                    <span>•</span>
+                                    <span>{quiz.mcqs?.length || 0} MCQs</span>
+                                    <span>•</span>
+                                    <span>{quiz.short_questions?.length || 0} Short</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-xs text-gray-400 mt-2">
+                                    <Clock size={12} />
+                                    {new Date(quiz.created_at).toLocaleDateString()}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
 
-            {/* ===== NEW QUIZ MODAL (Updated: Topic + File) ===== */}
+            {/* ===== NEW QUIZ MODAL ===== */}
             {showModal && (
                 <div
                     className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
@@ -494,6 +393,6 @@ export default function QuizDashboard() {
             )}
 
             <ChatWidget />
-        </div>
+        </>
     )
 }
