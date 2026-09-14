@@ -320,7 +320,7 @@ export default function SlidesEditor() {
     const colors = template.styles.colors
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50/30 p-6 md:p-8">
+        <div className="p-6 md:p-8">
             <div className="max-w-6xl mx-auto">
                 {/* ===== HEADER ===== */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">

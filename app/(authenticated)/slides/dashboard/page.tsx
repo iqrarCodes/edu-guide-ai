@@ -92,7 +92,7 @@ export default function SlidesDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50/30 p-6 md:p-8">
+    <div className="p-6 md:p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
@@ -118,7 +118,7 @@ export default function SlidesDashboard() {
           transition={{ duration: 0.5 }}
         >
           <h2 className="text-2xl font-bold text-gray-800">
-            Welcome back, <span className="text-purple-600">{userName}</span>! 👋
+            Welcome back, <span className="text-purple-600">{userName}</span>!
           </h2>
           <p className="text-gray-500 text-sm mt-1">Here's an overview of your presentations.</p>
         </motion.div>
@@ -149,7 +149,7 @@ export default function SlidesDashboard() {
 
         {/* Quick Actions */}
         <div className="mb-8">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">⚡ Quick Actions</h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-4"> Quick Actions</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {quickActions.map((action, idx) => (
               <motion.button
@@ -184,7 +184,7 @@ export default function SlidesDashboard() {
               <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/30">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-800">🎨 Available Templates</h3>
+                    <h3 className="text-lg font-bold text-gray-800"> Available Templates</h3>
                     <p className="text-xs text-gray-500 mt-1">
                       Click "Preview" to see the design, or "Use" to create a presentation.
                     </p>
@@ -397,7 +397,7 @@ export default function SlidesDashboard() {
                   )}
                   {previewTemplate.styles.contentSlide.accentPosition === 'left' && (
                     <div className="absolute left-0 top-0 bottom-0 w-2" style={{ backgroundColor: `#${previewTemplate.styles.colors.accent}` }} />
-                  )}
+                  )}8
                   {previewTemplate.styles.contentSlide.accentPosition === 'sidebar' && (
                     <div className="absolute left-0 top-0 bottom-0 w-24" style={{ backgroundColor: `#${previewTemplate.styles.colors.accent}` }} />
                   )}
@@ -432,7 +432,7 @@ export default function SlidesDashboard() {
                       }}
                     >
                       <p className="text-sm italic" style={{ color: `#${previewTemplate.styles.colors.text}` }}>
-                        💡 Key takeaway appears here
+                        Key takeaway appears here
                       </p>
                     </div>
                   </div>

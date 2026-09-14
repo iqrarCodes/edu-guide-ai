@@ -189,12 +189,12 @@ export default function Dashboard() {
 
   // ----- Project type icons & colors -----
   const projectIcons: Record<string, string> = {
-    slides: '📊',
-    quiz: '🧠',
-    lesson_plan: '📚',
-    script: '📝',
-    video: '🎬',
-    other: '📦',
+    slides: '',
+    quiz: '',
+    lesson_plan: '',
+    script: '',
+    video: '',
+    other: '',
   }
 
   const projectColors: Record<string, string> = {
@@ -215,11 +215,10 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50/30 flex">
+    <div className="p-6 md:p-8">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white/80 backdrop-blur-xl shadow-2xl transform transition-transform duration-300 ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0 lg:static lg:shadow-sm border-r border-gray-200/50`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white/80 backdrop-blur-xl shadow-2xl transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } lg:translate-x-0 lg:static lg:shadow-sm border-r border-gray-200/50`}>
         <div className="flex flex-col h-full">
           <div className="p-6 border-b border-gray-200/50">
             <h1 className="text-2xl font-extrabold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent flex items-center gap-2">
@@ -231,11 +230,10 @@ export default function Dashboard() {
             {navItems.map((item, idx) => (
               <button
                 key={idx}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  item.active
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${item.active
                     ? 'bg-gradient-to-r from-purple-50 to-indigo-50 text-purple-700 shadow-sm'
                     : 'text-gray-600 hover:bg-gray-100/70 hover:text-purple-600'
-                }`}
+                  }`}
                 onClick={() => {
                   if (item.href) router.push(item.href)
                 }}
@@ -281,7 +279,7 @@ export default function Dashboard() {
             <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
                 <h2 className="text-3xl md:text-4xl font-bold flex items-center gap-2">
-                  <span>👋 Welcome back,</span>
+                  <span> Welcome back,</span>
                   <span className="bg-white/20 px-4 py-1 rounded-full text-2xl">{userName}!</span>
                 </h2>
                 <p className="text-purple-100 mt-2 max-w-xl">
@@ -335,7 +333,7 @@ export default function Dashboard() {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-2xl font-bold text-gray-800">🚀 Your Projects</h3>
+                <h3 className="text-2xl font-bold text-gray-800"> Your Projects</h3>
                 <p className="text-sm text-gray-500">Manage all your AI-generated content in one place.</p>
               </div>
               <button
@@ -348,7 +346,7 @@ export default function Dashboard() {
 
             {projects.length === 0 ? (
               <div className="text-center py-20 bg-white/60 backdrop-blur-sm rounded-3xl border border-dashed border-gray-300">
-                <div className="text-6xl mb-4">🌱</div>
+                <div className="text-6xl mb-4"></div>
                 <p className="text-xl font-medium text-gray-500">No projects yet</p>
                 <p className="text-gray-400 text-sm mt-1">Start your first project by clicking <span className="text-purple-600 font-medium">New Project</span></p>
               </div>
@@ -361,7 +359,7 @@ export default function Dashboard() {
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <span className="text-4xl">{projectIcons[project.type] || '📦'}</span>
+                        <span className="text-4xl">{projectIcons[project.type] || ''}</span>
                         <div>
                           <h4 className="font-bold text-gray-800 text-lg">{project.name}</h4>
                           <p className="text-xs text-gray-400 capitalize">{project.type}</p>

@@ -66,7 +66,7 @@ export default function ChatPage() {
     } catch (error: any) {
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
-        message: `❌ ${error.message}`,
+        message: ` ${error.message}`,
         is_ai: true,
         created_at: new Date().toISOString(),
       }])
@@ -76,7 +76,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50/30 p-6 md:p-8">
+    <div className="p-6 md:p-8">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
@@ -99,7 +99,7 @@ export default function ChatPage() {
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-white/30 h-[500px] overflow-y-auto p-6 mb-4">
           {messages.length === 0 && (
             <div className="text-center text-gray-400 mt-20">
-              <div className="text-6xl mb-4">🤖</div>
+              <div className="text-6xl mb-4"></div>
               <p className="text-lg font-medium">How can I help you today?</p>
               <p className="text-sm">Upload a file or ask a question</p>
             </div>
@@ -111,8 +111,8 @@ export default function ChatPage() {
             >
               <div
                 className={`max-w-[75%] p-4 rounded-xl text-sm ${msg.is_ai
-                    ? 'bg-white border border-gray-200 text-gray-800 rounded-tl-none'
-                    : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-tr-none'
+                  ? 'bg-white border border-gray-200 text-gray-800 rounded-tl-none'
+                  : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-tr-none'
                   }`}
               >
                 {/* ✅ Use ReactMarkdown for AI messages */}

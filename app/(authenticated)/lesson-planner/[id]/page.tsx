@@ -49,7 +49,7 @@ export default function LessonPlanView() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30 p-6 md:p-8">
+    <div className="p-6 md:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -61,7 +61,7 @@ export default function LessonPlanView() {
           </button>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => alert('📥 Export feature coming soon!')}
+              onClick={() => alert(' Export feature coming soon!')}
               className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl transition flex items-center gap-1"
             >
               <Download size={14} /> Export
@@ -106,11 +106,10 @@ export default function LessonPlanView() {
               <div key={i} className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-gray-800">{activity.title}</h3>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    activity.type === 'group' ? 'bg-purple-100 text-purple-700' :
-                    activity.type === 'individual' ? 'bg-blue-100 text-blue-700' :
-                    'bg-green-100 text-green-700'
-                  }`}>
+                  <span className={`text-xs px-2 py-1 rounded-full ${activity.type === 'group' ? 'bg-purple-100 text-purple-700' :
+                      activity.type === 'individual' ? 'bg-blue-100 text-blue-700' :
+                        'bg-green-100 text-green-700'
+                    }`}>
                     {activity.type}
                   </span>
                 </div>
@@ -129,9 +128,8 @@ export default function LessonPlanView() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {plan.assessments?.map((assessment: any, i: number) => (
-              <div key={i} className={`p-4 rounded-xl border ${
-                assessment.type === 'formative' ? 'border-blue-200 bg-blue-50/50' : 'border-red-200 bg-red-50/50'
-              }`}>
+              <div key={i} className={`p-4 rounded-xl border ${assessment.type === 'formative' ? 'border-blue-200 bg-blue-50/50' : 'border-red-200 bg-red-50/50'
+                }`}>
                 <p className="text-sm font-medium text-gray-800">{assessment.type}</p>
                 <p className="text-sm text-gray-600">{assessment.description}</p>
               </div>
@@ -142,11 +140,11 @@ export default function LessonPlanView() {
         {/* Homework & Materials */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-white/30">
-            <h2 className="text-lg font-bold text-gray-800 mb-3">📝 Homework</h2>
+            <h2 className="text-lg font-bold text-gray-800 mb-3"> Homework</h2>
             <p className="text-sm text-gray-600">{plan.homework}</p>
           </div>
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-white/30">
-            <h2 className="text-lg font-bold text-gray-800 mb-3">📦 Materials</h2>
+            <h2 className="text-lg font-bold text-gray-800 mb-3"> Materials</h2>
             <ul className="space-y-1">
               {plan.materials?.map((material: string, i: number) => (
                 <li key={i} className="text-sm text-gray-600">• {material}</li>

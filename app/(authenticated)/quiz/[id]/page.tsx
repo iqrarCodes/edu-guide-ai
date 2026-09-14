@@ -158,7 +158,7 @@ export default function QuizPage() {
     const isComplete = answered === totalQuestions
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50/30 p-6 md:p-8">
+        <div className="p-6 md:p-8">
             <div className="max-w-3xl mx-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">

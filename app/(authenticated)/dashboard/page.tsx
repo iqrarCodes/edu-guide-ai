@@ -5,13 +5,11 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import {
-  LayoutDashboard, FileText, HelpCircle, BookOpen,
-  Library, History, Bookmark, Settings, LifeBuoy,
-  MessageCircle, Menu, Plus,
+  FileText, HelpCircle, BookOpen,
+  Plus,
 } from 'lucide-react'
 
-import { Project, ProjectType, NavItem } from '@/components/dashboard/types'
-import { Sidebar } from '@/components/dashboard/Sidebar'
+import { Project, ProjectType } from '@/components/dashboard/types'
 import { StatsGrid } from '@/components/dashboard/StatsGrid'
 import { QuickActions } from '@/components/dashboard/QuickActions'
 import { ProjectSection } from '@/components/dashboard/ProjectSection'
@@ -20,32 +18,12 @@ import { AddProjectModal } from '@/components/dashboard/AddProjectModal'
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
 import ChatWidget from '@/components/ChatWidget'
 
-// ============================================================
-// NAV ITEMS – All point to dashboards
-// ============================================================
-const navItems: NavItem[] = [
-  { icon: LayoutDashboard, label: 'Dashboard', active: true, href: '/dashboard' },
-  { icon: FileText, label: 'AI Slides', active: false, href: '/slides/dashboard' },
-  { icon: HelpCircle, label: 'AI Quizzes', active: false, href: '/quiz/dashboard' },
-  { icon: BookOpen, label: 'Lesson Planner', active: false, href: '/lesson-planner/dashboard' },
-  { icon: MessageCircle, label: 'AI Chat', active: false, href: '/chat' },
-  { icon: Library, label: 'My Library', active: false, href: '/library' },
-  { icon: History, label: 'History', active: false, href: '/history' },
-  { icon: Bookmark, label: 'Bookmarks', active: false, href: '/bookmarks' },
-  { icon: Settings, label: 'Settings', active: false, href: '/settings' },
-  { icon: LifeBuoy, label: 'Help & Support', active: false, href: '/support' },
-]
-
-// ============================================================
-// MAIN DASHBOARD
-// ============================================================
 export default function Dashboard() {
   const router = useRouter()
   const supabase = createClient()
 
   // User state
   const [userName, setUserName] = useState('Guest')
-  const [userEmail, setUserEmail] = useState('')
   const [loading, setLoading] = useState(true)
 
   // Projects
@@ -77,9 +55,6 @@ export default function Dashboard() {
   const [newProjectType, setNewProjectType] = useState<ProjectType>('slides')
   const [newProjectDesc, setNewProjectDesc] = useState('')
   const [submitting, setSubmitting] = useState(false)
-
-  // Sidebar
-  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // ============================================================
   // FETCH PROJECTS
@@ -155,7 +130,6 @@ export default function Dashboard() {
         return
       }
       setUserName(user.user_metadata?.name || user.email?.split('@')[0] || 'Guest')
-      setUserEmail(user.email || '')
       await loadProjects(user.id, 1, false)
       setLoading(false)
     }
@@ -239,11 +213,6 @@ export default function Dashboard() {
     else toast.info('This project type is not yet supported')
   }
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
-  }
-
   const loadMore = async () => {
     setLoadingMore(true)
     const nextPage = page + 1
@@ -278,127 +247,107 @@ export default function Dashboard() {
   // RENDER
   // ============================================================
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50/30 flex">
-      {/* Sidebar */}
-      <Sidebar
-        userName={userName}
-        userEmail={userEmail}
-        navItems={navItems}
-        onLogout={handleLogout}
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-      />
-
-      {/* Main */}
-      <main className="flex-1 overflow-y-auto">
-        <header className="lg:hidden bg-white/80 backdrop-blur-md border-b border-gray-200/50 p-4 flex items-center justify-between sticky top-0 z-40">
-          <h1 className="text-xl font-bold text-purple-600">EduGuide AI+</h1>
-          <button onClick={() => setSidebarOpen(true)}>
-            <Menu size={24} />
-          </button>
-        </header>
-
-        <div className="p-4 md:p-8 max-w-7xl mx-auto">
-          {/* Welcome Banner */}
-          <div className="relative overflow-hidden bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-3xl p-8 mb-8 text-white shadow-xl">
-            <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div>
-                <h2 className="text-3xl md:text-4xl font-bold">
-                  Welcome back, <span className="bg-white/20 px-4 py-1 rounded-full text-2xl">{userName}</span>
-                </h2>
-                <p className="text-purple-100 mt-2 max-w-xl">
-                  Your AI-powered learning hub is ready. Continue your journey with smart tools.
-                </p>
-              </div>
-              <div className="flex items-center gap-3 flex-wrap">
-                <button
-                  onClick={() => setShowModal(true)}
-                  className="bg-white text-purple-700 px-6 py-3 rounded-2xl font-bold shadow-lg hover:shadow-xl transition flex items-center gap-2 hover:scale-105"
-                >
-                  <Plus size={20} /> New Project
-                </button>
-              </div>
+    <>
+      <div className="p-4 md:p-8 max-w-7xl mx-auto">
+        {/* Welcome Banner */}
+        <div className="relative overflow-hidden bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-3xl p-8 mb-8 text-white shadow-xl">
+          <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-bold">
+                Welcome back, <span className="bg-white/20 px-4 py-1 rounded-full text-2xl">{userName}</span>
+              </h2>
+              <p className="text-purple-100 mt-2 max-w-xl">
+                Your AI-powered learning hub is ready. Continue your journey with smart tools.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <button
+                onClick={() => setShowModal(true)}
+                className="bg-white text-purple-700 px-6 py-3 rounded-2xl font-bold shadow-lg hover:shadow-xl transition flex items-center gap-2 hover:scale-105"
+              >
+                <Plus size={20} /> New Project
+              </button>
             </div>
           </div>
+        </div>
 
-          {/* Stats */}
-          <StatsGrid stats={stats} />
+        {/* Stats */}
+        <StatsGrid stats={stats} />
 
-          {/* Quick Actions – All to Dashboards */}
-          <QuickActions
-            actions={[
-              {
-                icon: FileText,
-                label: 'Slides Dashboard',
-                desc: 'Manage presentations',
-                color: 'blue',
-                onClick: () => router.push('/slides/dashboard'),
-              },
-              {
-                icon: HelpCircle,
-                label: 'Quiz Dashboard',
-                desc: 'Manage quizzes',
-                color: 'purple',
-                onClick: () => router.push('/quiz/dashboard'),
-              },
-              {
-                icon: BookOpen,
-                label: 'Lesson Planner Dashboard',
-                desc: 'Manage lesson plans',
-                color: 'green',
-                onClick: () => router.push('/lesson-planner/dashboard'),
-              },
-            ]}
+        {/* Quick Actions */}
+        <QuickActions
+          actions={[
+            {
+              icon: FileText,
+              label: 'Slides Dashboard',
+              desc: 'Manage presentations',
+              color: 'blue',
+              onClick: () => router.push('/slides/dashboard'),
+            },
+            {
+              icon: HelpCircle,
+              label: 'Quiz Dashboard',
+              desc: 'Manage quizzes',
+              color: 'purple',
+              onClick: () => router.push('/quiz/dashboard'),
+            },
+            {
+              icon: BookOpen,
+              label: 'Lesson Planner Dashboard',
+              desc: 'Manage lesson plans',
+              color: 'green',
+              onClick: () => router.push('/lesson-planner/dashboard'),
+            },
+          ]}
+        />
+
+        {/* Project Sections */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <ProjectSection
+            title="Recent Slides"
+            icon={FileText}
+            color="blue"
+            projects={slidesProjects}
+            emptyIcon=""
+            emptyText="No slides yet"
+            createLink="/slides/dashboard"
+            onLaunch={handleLaunch}
+            onDelete={handleDeleteProject}
           />
-
-          {/* Project Sections – View All → Dashboards */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <ProjectSection
-              title="Recent Slides"
-              icon={FileText}
-              color="blue"
-              projects={slidesProjects}
-              emptyIcon=""
-              emptyText="No slides yet"
-              createLink="/slides/dashboard"   // ✅ Dashboard link
-              onLaunch={handleLaunch}
-              onDelete={handleDeleteProject}
-            />
-            <ProjectSection
-              title="Recent Quizzes"
-              icon={HelpCircle}
-              color="purple"
-              projects={quizzesProjects}
-              emptyIcon=""
-              emptyText="No quizzes yet"
-              createLink="/quiz/dashboard"     // ✅ Dashboard link
-              onLaunch={handleLaunch}
-              onDelete={handleDeleteProject}
-            />
-            <ProjectSection
-              title="Recent Lesson Plans"
-              icon={BookOpen}
-              color="green"
-              projects={lessonPlansProjects}
-              emptyIcon=""
-              emptyText="No lesson plans yet"
-              createLink="/lesson-planner/dashboard"   // ✅ Dashboard link
-              onLaunch={handleLaunch}
-              onDelete={handleDeleteProject}
-            />
-          </div>
-
-          {/* Recent Projects */}
-          <RecentProjects
-            projects={allProjects}
-            hasMore={hasMore}
-            loadingMore={loadingMore}
-            onLoadMore={loadMore}
+          <ProjectSection
+            title="Recent Quizzes"
+            icon={HelpCircle}
+            color="purple"
+            projects={quizzesProjects}
+            emptyIcon=""
+            emptyText="No quizzes yet"
+            createLink="/quiz/dashboard"
+            onLaunch={handleLaunch}
+            onDelete={handleDeleteProject}
+          />
+          <ProjectSection
+            title="Recent Lesson Plans"
+            icon={BookOpen}
+            color="green"
+            projects={lessonPlansProjects}
+            emptyIcon=""
+            emptyText="No lesson plans yet"
+            createLink="/lesson-planner/dashboard"
             onLaunch={handleLaunch}
             onDelete={handleDeleteProject}
           />
         </div>
-      </main>
+
+        {/* Recent Projects */}
+        <RecentProjects
+          projects={allProjects}
+          hasMore={hasMore}
+          loadingMore={loadingMore}
+          onLoadMore={loadMore}
+          onLaunch={handleLaunch}
+          onDelete={handleDeleteProject}
+        />
+      </div>
 
       {/* Add Project Modal */}
       <AddProjectModal
@@ -415,8 +364,7 @@ export default function Dashboard() {
         setModalDirty={setModalDirty}
       />
 
-      {/* Chat Widget */}
       <ChatWidget />
-    </div>
+    </>
   )
 }

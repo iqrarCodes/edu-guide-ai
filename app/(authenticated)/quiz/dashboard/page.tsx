@@ -87,7 +87,7 @@ export default function QuizDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50/30 p-6 md:p-8">
+        <div className="p-6 md:p-8">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
@@ -213,7 +213,7 @@ export default function QuizDashboard() {
                                         <div className="flex items-start justify-between">
                                             <div>
                                                 <h4 className="font-bold text-gray-800">
-                                                    {quiz.video_url ? '🎬 Video Quiz' : ' File Quiz'}
+                                                    {quiz.video_url ? ' Video Quiz' : ' File Quiz'}
                                                 </h4>
                                                 <p className="text-xs text-gray-400 mt-1">
                                                     {quiz.difficulty} • {quiz.language}
